@@ -5,15 +5,42 @@
     "timezone": "IST",
     "session_status": "OPEN"
   },
+
   "nifty": {
     "spot": 24120.7,
     "change_points": -110.6,
     "change_percent": -0.46
   },
+
+  "global_markets": [
+    { "name": "GIFT NIFTY", "value": 31, "direction": "UP" },
+    { "name": "DOW FUTURES", "value": -104, "direction": "DOWN" },
+    { "name": "NIKKEI", "value": 211, "direction": "UP" },
+    { "name": "DAX", "value": -63, "direction": "DOWN" },
+    { "name": "SHANGHAI", "value": 8, "direction": "UP" }
+  ],
+
   "volatility": {
-    "atr": 10.76
+    "atr": 10.76,
+    "state": "EXPANDING"
   },
+
   "vwap": {
-    "position": "ABOVE"
+    "position": "ABOVE",
+    "strength": "STRONG"
+  },
+
+  "trend_architect": {
+    "gap_behavior": "CLOSED_BY_1105",
+    "major_candle": {
+      "size": 45.3,
+      "type": "MARUBOZU",
+      "time": "09:50–09:55",
+      "color": "RED"
+    },
+    "next_candle_relation": "OPPOSING",
+    "velocity": "50 points in 2 candles",
+    "market_character": "Measured discovery with acceptance",
+    "effective_time": "11:00 AM"
   }
 }
