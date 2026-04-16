@@ -54,14 +54,35 @@ def vwap_15m(df_15):
 
 def market_open_logic(df_15, anchors):
     today_df = df_15[df_15.index.date == TODAY]
-    open_candle = today_df.between_time("09:15", "09:30").iloc[0]
 
-    gap_pts = round(open_candle["Open"] - anchors["pdc"], 2)
-    gap_type = "NO GAP"
+    # Select the FIRST 15‑min candle only (09:15–09:30)
+    opening_slice = today_df.between_time("09:15", "09:30")
+
+    if opening_slice.empty:
+        return None
+
+    open_row = opening_slice.iloc[0]
+
+    open_price = float(open_row["Open"])
+    high_price = float(open_row["High"])
+    low_price = float(open_row["Low"])
+    close_price = float(open_row["Close"])
+
+    # GAP CALCULATION (FORCED SCALAR)
+    gap_pts = round(open_price - float(anchors["pdc"]), 2)
+
     if gap_pts > 0:
         gap_type = "GAP UP"
     elif gap_pts < 0:
         gap_type = "GAP DOWN"
+    else:
+        gap_type = "NO GAP"
+
+    # OPENING CANDLE TYPE
+    body = abs(close_price - open_price)
+    range_ = high_price - low_price
+
+    candle_type = "DOJI" if body <= range_ * 0.2 else "BODY"
 
     return {
         "gap_status": {
@@ -70,18 +91,18 @@ def market_open_logic(df_15, anchors):
             "frozen_at": "09:20"
         },
         "opening_candle": {
-            "type": "DOJI" if abs(open_candle["Close"] - open_candle["Open"]) < (open_candle["High"] - open_candle["Low"]) * 0.2 else "BODY",
+            "type": candle_type,
             "ohlc": {
-                "open": round(open_candle["Open"], 2),
-                "high": round(open_candle["High"], 2),
-                "low": round(open_candle["Low"], 2),
-                "close": round(open_candle["Close"], 2)
+                "open": round(open_price, 2),
+                "high": round(high_price, 2),
+                "low": round(low_price, 2),
+                "close": round(close_price, 2)
             },
-            "range": round(open_candle["High"] - open_candle["Low"], 2),
+            "range": round(range_, 2),
             "frozen_at": "09:35"
         }
     }
-
+    
 # =======================
 # TREND ARCHITECT
 # =======================
