@@ -1,10 +1,13 @@
 fetch("snapshots/market_phase1.json")
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) throw new Error("JSON not found");
+    return res.json();
+  })
   .then(data => {
 
-    // Last Updated
+    // LAST UPDATED
     document.getElementById("lastUpdated").innerText =
-      `Last Updated: ${data.meta.last_updated} IST`;
+      `Last Updated: ${data.meta?.last_updated ?? "--"} IST`;
 
     // NIFTY
     if (data.nifty) {
@@ -19,56 +22,45 @@ fetch("snapshots/market_phase1.json")
     // GLOBAL INDICES
     const globalList = document.getElementById("globalList");
     globalList.innerHTML = "";
-
-    data.global_markets.forEach(m => {
-      const cls = m.direction === "UP" ? "up" : "down";
+    (data.global_markets ?? []).forEach(m => {
       const li = document.createElement("li");
-      li.innerHTML = `<span class="${cls}">
-        ${m.name} | ${m.value}
-      </span>`;
+      li.innerText = `${m.name} | ${m.value}`;
       globalList.appendChild(li);
     });
 
     // ATR
     document.getElementById("atrValue").innerText =
-      data.volatility.atr;
+      data.volatility?.atr ?? "—";
 
     // VWAP
-    document.getElementById("vwapValue").innerText =
-      data.vwap.position;
+    document.getElementById("vwapPosition").innerText =
+      data.vwap?.position ?? "—";
+    document.getElementById("vwapRange").innerText =
+      data.vwap?.expansion_range ?? "—";
+    document.getElementById("vwapMid").innerText =
+      data.vwap?.midline ?? "—";
 
-   // ===== GAP STATUS
-const gap = data.market_open?.gap_status;
-if (gap) {
-  document.getElementById("gapStatus").innerHTML =
-    `Gap Status: ${gap.type} (${gap.points}) | Frozen @ ${gap.frozen_at}`;
-}
+    // GAP & OPEN
+    document.getElementById("gapStatus").innerText =
+      data.market_open?.gap_status?.type ?? "Data Awaited";
 
-// ===== OPENING CANDLE
-const oc = data.market_open?.opening_candle;
-if (oc) {
-  document.getElementById("openingCandle").innerHTML =
-    `Opening Candle: ${oc.type}<br>
-     O: ${oc.ohlc.open} |
-     H: ${oc.ohlc.high} |
-     L: ${oc.ohlc.low} |
-     C: ${oc.ohlc.close}<br>
-     Range: ${oc.range} | Frozen @ ${oc.frozen_at}`;
-}
-    
+    document.getElementById("openingCandle").innerText =
+      data.market_open?.opening_candle?.type ?? "Data Awaited";
+
     // TREND ARCHITECT
-    const ta = data.trend_architect;
-    document.getElementById("trendBlock").innerHTML = `
-      Gap Behavior: ${ta.gap_behavior}<br>
-      Major Candle: ${ta.major_candle.size}
-      (${ta.major_candle.type}) @ ${ta.major_candle.time}<br>
-      Next Candle: ${ta.next_candle_relation}<br>
-      Velocity: ${ta.velocity}<br>
-      Character: ${ta.market_character}<br>
-      Effective: ${ta.effective_time}
-    `;
+    document.getElementById("trendBlock").innerText =
+      data.trend_architect?.market_character ?? "Data Awaited";
+
+    // ANCHORS
+    document.getElementById("anchorsValue").innerText =
+      data.previous_day
+        ? `PDH ${data.previous_day.pdh} | PDL ${data.previous_day.pdl} | PDC ${data.previous_day.pdc}`
+        : "—";
+
+    // FII / DII
+    document.getElementById("fiiDiiValue").innerText =
+      data.institutional_flows?.status ?? "Awaiting institutional data";
   })
   .catch(err => {
-    console.error(err);
-    alert("Failed to load market data");
+    console.warn("Market data unavailable:", err.message);
   });
