@@ -1,1 +1,19 @@
-
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Market Phase 1 Snapshot",
+  "type": "object",
+  "required": ["meta"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "last_updated": { "type": "string" },
+        "timezone": { "type": "string" },
+        "session_status": {
+          "enum": ["OPEN", "CLOSED", "MARKET_CLOSED"]
+        }
+      }
+    }
+  }
+}
