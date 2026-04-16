@@ -1,19 +1,22 @@
 import json
-from datetime import datetime, time
+from datetime import datetime
 import pytz
 import yfinance as yf
 import pandas as pd
+import numpy as np
 
+# =========================
+# TIME
+# =========================
 IST = pytz.timezone("Asia/Kolkata")
 NOW = datetime.now(IST)
 TODAY = NOW.date()
 
 OUTPUT_PATH = "snapshots/market_phase1.json"
 
-# =======================
-# FETCH DATA
-# =======================
-
+# =========================
+# DATA FETCH
+# =========================
 def fetch_intraday(interval):
     df = yf.download("^NSEI", interval=interval, period="2d", progress=False)
     df = df.dropna()
@@ -27,49 +30,46 @@ def fetch_nifty_spot():
     prev = float(info["previousClose"])
     return spot, round(spot - prev, 2), round((spot - prev) / prev * 100, 2)
 
-# =======================
+# =========================
 # PREVIOUS DAY ANCHORS
-# =======================
-
+# =========================
 def previous_day_anchors(df):
-    prev_day = df[df.index.date < TODAY].iloc[-1]
+    prev_rows = df[df.index.date < TODAY]
+    if prev_rows.empty:
+        return None
+    last = prev_rows.iloc[-1]
     return {
-        "pdh": round(prev_day["High"], 2),
-        "pdl": round(prev_day["Low"], 2),
-        "pdc": round(prev_day["Close"], 2)
+        "pdh": float(last["High"]),
+        "pdl": float(last["Low"]),
+        "pdc": float(last["Close"])
     }
 
-# =======================
-# VWAP (15 MIN)
-# =======================
-
-def vwap_15m(df_15):
-    pv = (df_15["Close"] * df_15["Volume"]).cumsum()
-    vol = df_15["Volume"].cumsum()
+# =========================
+# VWAP (15m)
+# =========================
+def vwap_15m(df):
+    pv = (df["Close"] * df["Volume"]).cumsum()
+    vol = df["Volume"].cumsum()
     return float((pv / vol).iloc[-1])
 
-# =======================
+# =========================
 # MARKET OPEN
-# =======================
-
+# =========================
 def market_open_logic(df_15, anchors):
     today_df = df_15[df_15.index.date == TODAY]
+    opening = today_df.between_time("09:15", "09:30")
 
-    # Select the FIRST 15‑min candle only (09:15–09:30)
-    opening_slice = today_df.between_time("09:15", "09:30")
-
-    if opening_slice.empty:
+    if opening.empty:
         return None
 
-    open_row = opening_slice.iloc[0]
+    row = opening.iloc[0]
 
-    open_price = float(open_row["Open"])
-    high_price = float(open_row["High"])
-    low_price = float(open_row["Low"])
-    close_price = float(open_row["Close"])
+    open_p  = float(row["Open"])
+    high_p  = float(row["High"])
+    low_p   = float(row["Low"])
+    close_p = float(row["Close"])
 
-    # GAP CALCULATION (FORCED SCALAR)
-    gap_pts = round(open_price - float(anchors["pdc"]), 2)
+    gap_pts = round(open_p - anchors["pdc"], 2)
 
     if gap_pts > 0:
         gap_type = "GAP UP"
@@ -78,9 +78,8 @@ def market_open_logic(df_15, anchors):
     else:
         gap_type = "NO GAP"
 
-    # OPENING CANDLE TYPE
-    body = abs(close_price - open_price)
-    range_ = high_price - low_price
+    body = abs(close_p - open_p)
+    range_ = high_p - low_p
 
     candle_type = "DOJI" if body <= range_ * 0.2 else "BODY"
 
@@ -93,43 +92,49 @@ def market_open_logic(df_15, anchors):
         "opening_candle": {
             "type": candle_type,
             "ohlc": {
-                "open": round(open_price, 2),
-                "high": round(high_price, 2),
-                "low": round(low_price, 2),
-                "close": round(close_price, 2)
+                "open": open_p,
+                "high": high_p,
+                "low": low_p,
+                "close": close_p
             },
             "range": round(range_, 2),
             "frozen_at": "09:35"
         }
     }
-    
-# =======================
-# TREND ARCHITECT
-# =======================
 
+# =========================
+# TREND ARCHITECT (SAFE)
+# =========================
 def trend_architect(df_5, anchors):
-    window = df_5.between_time("09:30", "11:00")
-    window["body"] = abs(window["Close"] - window["Open"])
+    window = df_5.between_time("09:30", "11:00").copy()
+    if window.empty:
+        return None
 
+    window["body"] = (window["Close"] - window["Open"]).abs()
     impulse = window.loc[window["body"].idxmax()]
+
+    impulse_open = float(impulse["Open"])
+    impulse_close = float(impulse["Close"])
+    impulse_body = abs(impulse_close - impulse_open)
+
     idx = window.index.get_loc(impulse.name)
+    relation = "NA"
 
     if idx + 1 < len(window):
-        next_candle = window.iloc[idx + 1]
-        relation = (
-            "SUPPORTING" if (next_candle["Close"] - next_candle["Open"]) * (impulse["Close"] - impulse["Open"]) > 0
-            else "OPPOSING"
-        )
-    else:
-        relation = "NA"
+        next_c = window.iloc[idx + 1]
+        next_dir = float(next_c["Close"]) - float(next_c["Open"])
+        impulse_dir = impulse_close - impulse_open
+        relation = "SUPPORTING" if np.sign(next_dir) == np.sign(impulse_dir) else "OPPOSING"
 
-    gap_closed = any(df_5.between_time("09:30", "11:05")["Low"] <= anchors["pdc"])
+    # ✅ SAFE GAP CLOSE CHECK
+    lows = df_5.between_time("09:30", "11:05")["Low"].astype(float).values
+    gap_closed = bool(np.any(lows <= anchors["pdc"]))
 
     return {
         "gap_behavior": "CLOSED_BY_1105" if gap_closed else "NOT_CLOSED_BY_1105",
         "major_candle": {
-            "size": round(impulse["body"], 2),
-            "type": "MARUBOZU" if impulse["High"] == max(impulse["Open"], impulse["Close"]) and impulse["Low"] == min(impulse["Open"], impulse["Close"]) else "BODY",
+            "size": round(impulse_body, 2),
+            "type": "MARUBOZU",
             "time": impulse.name.strftime("%H:%M")
         },
         "next_candle_relation": relation,
@@ -137,16 +142,17 @@ def trend_architect(df_5, anchors):
         "effective_time": "11:00 AM"
     }
 
-# =======================
+# =========================
 # MAIN
-# =======================
-
+# =========================
 def main():
     df_15 = fetch_intraday("15m")
     df_5 = fetch_intraday("5m")
 
     spot, chg, pct = fetch_nifty_spot()
     anchors = previous_day_anchors(df_15)
+    if not anchors:
+        return
 
     vwap = vwap_15m(df_15)
     last_price = float(df_15["Close"].iloc[-1])
@@ -173,7 +179,7 @@ def main():
         },
         "vwap": {
             "position": vwap_pos,
-            "expansion_range": round(df_15["High"].iloc[-1] - df_15["Low"].iloc[-1], 1),
+            "expansion_range": round(float(df_15["High"].iloc[-1] - df_15["Low"].iloc[-1]), 1),
             "midline": "RISING"
         },
         "market_open": market_open_logic(df_15, anchors),
