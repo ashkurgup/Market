@@ -37,6 +37,25 @@ fetch("snapshots/market_phase1.json")
     document.getElementById("vwapValue").innerText =
       data.vwap.position;
 
+   // ===== GAP STATUS
+const gap = data.market_open?.gap_status;
+if (gap) {
+  document.getElementById("gapStatus").innerHTML =
+    `Gap Status: ${gap.type} (${gap.points}) | Frozen @ ${gap.frozen_at}`;
+}
+
+// ===== OPENING CANDLE
+const oc = data.market_open?.opening_candle;
+if (oc) {
+  document.getElementById("openingCandle").innerHTML =
+    `Opening Candle: ${oc.type}<br>
+     O: ${oc.ohlc.open} |
+     H: ${oc.ohlc.high} |
+     L: ${oc.ohlc.low} |
+     C: ${oc.ohlc.close}<br>
+     Range: ${oc.range} | Frozen @ ${oc.frozen_at}`;
+}
+    
     // TREND ARCHITECT
     const ta = data.trend_architect;
     document.getElementById("trendBlock").innerHTML = `
