@@ -1,10 +1,5 @@
 fetch("snapshots/market_phase1.json")
-  .then(response => {
-    if (!response.ok) {
-      throw new Error("HTTP error " + response.status);
-    }
-    return response.json();
-  })
+  .then(res => res.json())
   .then(data => {
 
     // Last Updated
@@ -12,14 +7,23 @@ fetch("snapshots/market_phase1.json")
       `Last Updated: ${data.meta.last_updated} IST`;
 
     // NIFTY
-    const nifty = data.nifty;
-    if (nifty) {
-      const cls = nifty.change_points >= 0 ? "up" : "down";
+    if (data.nifty) {
+      const cls = data.nifty.change_points >= 0 ? "up" : "down";
       document.getElementById("niftyValue").innerHTML =
         `<span class="${cls}">
-          ${nifty.spot} (${nifty.change_points} / ${nifty.change_percent}%)
+          ${data.nifty.spot} (${data.nifty.change_points} / ${data.nifty.change_percent}%)
         </span>`;
     }
+
+    // Global Indices
+    const globalList = document.getElementById("globalList");
+    globalList.innerHTML = "";
+    data.global_markets.forEach(m => {
+      const cls = m.direction === "UP" ? "up" : "down";
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="${cls}">${m.name}: ${m.value}</span>`;
+      globalList.appendChild(li);
+    });
 
     // ATR
     document.getElementById("atrValue").innerText =
@@ -28,8 +32,20 @@ fetch("snapshots/market_phase1.json")
     // VWAP
     document.getElementById("vwapValue").innerText =
       data.vwap?.position ?? "Data Awaited";
+
+    // Trend Architect
+    const ta = data.trend_architect;
+    document.getElementById("trendBlock").innerHTML = `
+      Gap Behavior: ${ta.gap_behavior}<br>
+      Major Candle: ${ta.major_candle.size} (${ta.major_candle.type}) @ ${ta.major_candle.time}<br>
+      Next Candle: ${ta.next_candle_relation}<br>
+      Velocity: ${ta.velocity}<br>
+      Character: ${ta.market_character}<br>
+      Effective: ${ta.effective_time}
+    `;
+
   })
-  .catch(error => {
-    console.error(error);
-    alert("Failed to load market data. Check console.");
+  .catch(err => {
+    console.error(err);
+    alert("Failed to load market data");
   });
