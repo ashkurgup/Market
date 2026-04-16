@@ -1,47 +1,96 @@
-<!-- NIFTY -->
-<div class="section section-primary">
-  <h2>NIFTY <span class="tag live">LIVE</span></h2>
-  <div id="niftyValue" class="value"></div>
-  <div class="subline">Updated <span id="lastUpdated"></span> IST</div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Market Dashboard — Phase 1</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-<!-- GLOBAL INDICES -->
-<div class="section section-muted">
-  <h2>Global Indices <span class="tag context">Context</span></h2>
-  <ul id="globalList"></ul>
-  <div class="note">Risk-on / Risk-off background only</div>
-</div>
+<body>
 
-<!-- VOLATILITY -->
-<div class="section">
-  <h2>Volatility (ATR)</h2>
-  <div id="atrValue" class="value"></div>
-  <div class="note">
-    ATR expanding → intraday continuation favored
+  <h1>Market Dashboard — Phase 1</h1>
+  <div id="lastUpdated" class="timestamp">Last Updated: --</div>
+
+  <!-- ===================== -->
+  <!-- NIFTY (LIVE) -->
+  <!-- ===================== -->
+  <div class="section section-primary">
+    <h2>NIFTY <span class="tag live">LIVE</span></h2>
+    <div id="niftyValue" class="value">Data Awaited</div>
+    <div class="subline">Intraday spot price vs previous close</div>
   </div>
-</div>
 
-<!-- VWAP -->
-<div class="section">
-  <h2>VWAP</h2>
-  <div id="vwapValue" class="value"></div>
-  <div class="note">
-    Price accepted above VWAP with expanding range
+  <!-- ===================== -->
+  <!-- GLOBAL INDICES (CONTEXT) -->
+  <!-- ===================== -->
+  <div class="section section-muted">
+    <h2>Global Indices <span class="tag context">Context</span></h2>
+    <ul id="globalList">
+      <li>Data Awaited</li>
+    </ul>
+    <div class="note">
+      Used only as risk-on / risk-off background.  
+      Never a trading signal.
+    </div>
   </div>
-</div>
 
-<!-- MARKET OPEN -->
-<div class="section section-early">
-  <h2>Market Open <span class="tag frozen">Frozen</span></h2>
-  <div id="gapStatus"></div>
-  <div id="openingCandle"></div>
-</div>
-
-<!-- TREND ARCHITECT -->
-<div class="section section-spine">
-  <h2>Trend Architect <span class="tag final">Final</span></h2>
-  <div id="trendBlock"></div>
-  <div class="note emphasis">
-    Effective from 11:00 AM — does not repaint
+  <!-- ===================== -->
+  <!-- VOLATILITY -->
+  <!-- ===================== -->
+  <div class="section">
+    <h2>Volatility (ATR)</h2>
+    <div id="atrValue" class="value">Data Awaited</div>
+    <div class="note">
+      ATR expanding → intraday continuation favored (contextual)
+    </div>
   </div>
-</div>
+
+  <!-- ===================== -->
+  <!-- VWAP -->
+  <!-- ===================== -->
+  <div class="section">
+    <h2>VWAP</h2>
+    <div id="vwapValue" class="value">Data Awaited</div>
+    <div class="note">
+      Acceptance above VWAP with expanding range favors continuation
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- MARKET OPEN (FROZEN) -->
+  <!-- ===================== -->
+  <div class="section section-early">
+    <h2>Market Open <span class="tag frozen">Frozen</span></h2>
+
+    <div id="gapStatus" class="block-line">
+      Gap Status: Data Awaited
+    </div>
+
+    <div id="openingCandle" class="block-line">
+      Opening Candle: Data Awaited
+    </div>
+
+    <div class="note">
+      Gap freezes at 09:20 IST · Opening candle freezes at 09:35 IST
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- TREND ARCHITECT (SPINE) -->
+  <!-- ===================== -->
+  <div class="section section-spine">
+    <h2>Trend Architect <span class="tag final">Final</span></h2>
+
+    <div id="trendBlock">
+      Data Awaited
+    </div>
+
+    <div class="note emphasis">
+      Effective from 11:00 AM · Does not repaint afterward
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+``
