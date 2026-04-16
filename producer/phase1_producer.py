@@ -1,129 +1,104 @@
 import json
-import os
-from datetime import datetime, time
+from datetime import datetime
 import pytz
+import yfinance as yf
+import pandas as pd
 
 IST = pytz.timezone("Asia/Kolkata")
+NOW = datetime.now(IST)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase1.json")
+OUTPUT_PATH = "snapshots/market_phase1.json"
 
-# -------------------------------
-# NSE HOLIDAYS (MAINTAIN YEARLY)
-# -------------------------------
-NSE_HOLIDAYS = {
-    "2026-01-26",  # Republic Day
-    "2026-03-07",  # Holi
-    "2026-03-30",  # Ram Navami
-    "2026-04-14",  # Dr Ambedkar Jayanti
-    "2026-05-01",  # Maharashtra Day
-    "2026-08-15",  # Independence Day
-    "2026-10-02",  # Gandhi Jayanti
-    "2026-11-12",  # Diwali
-}
+def fetch_nifty():
+    t = yf.Ticker("^NSEI")
+    info = t.fast_info
+    spot = info["lastPrice"]
+    prev = info["previousClose"]
+    change = round(spot - prev, 2)
+    pct = round((change / prev) * 100, 2)
+    return spot, change, pct
 
-# -------------------------------
-# TIME HELPERS
-# -------------------------------
-def now_ist():
-    return datetime.now(IST)
+def fetch_global():
+    symbols = {
+        "GIFT NIFTY": "^NSEI",
+        "DOW FUTURES": "YM=F",
+        "NIKKEI": "^N225",
+        "DAX": "^GDAXI",
+        "SHANGHAI": "000001.SS"
+    }
 
-def is_weekend(dt):
-    return dt.weekday() >= 5  # Sat / Sun
+    data = []
+    for name, sym in symbols.items():
+        try:
+            t = yf.Ticker(sym)
+            chg = round(t.fast_info["lastPrice"] - t.fast_info["previousClose"])
+            data.append({
+                "name": name,
+                "value": chg,
+                "direction": "UP" if chg >= 0 else "DOWN"
+            })
+        except:
+            continue
+    return data
 
-def is_holiday(dt):
-    return dt.strftime("%Y-%m-%d") in NSE_HOLIDAYS
+def fetch_intraday():
+    df = yf.download("^NSEI", interval="5m", period="1d", progress=False)
+    df.dropna(inplace=True)
+    return df
 
-def market_hours_open(dt):
-    return time(9, 0) <= dt.time() <= time(15, 35)
+def calc_atr(df, period=14):
+    hl = df["High"] - df["Low"]
+    hc = abs(df["High"] - df["Close"].shift())
+    lc = abs(df["Low"] - df["Close"].shift())
+    tr = pd.concat([hl, hc, lc], axis=1).max(axis=1)
+    return round(tr.rolling(period).mean().iloc[-1], 2)
 
-def reset_window(dt):
-    """Reset sensitive blocks to Data Awaited at 08:40"""
-    return dt.time() < time(8, 40)
+def calc_vwap(df):
+    pv = (df["Close"] * df["Volume"]).cumsum()
+    vol = df["Volume"].cumsum()
+    return round((pv / vol).iloc[-1], 2)
 
-# -------------------------------
-# SAFE SNAPSHOT WRITER
-# -------------------------------
-def write_snapshot(snapshot):
-    tmp_path = SNAPSHOT_PATH + ".tmp"
-    with open(tmp_path, "w") as f:
-        json.dump(snapshot, f, indent=2)
-    os.replace(tmp_path, SNAPSHOT_PATH)
+def main():
+    spot, change, pct = fetch_nifty()
+    globals_ = fetch_global()
+    df = fetch_intraday()
 
-# -------------------------------
-# BASE SNAPSHOT TEMPLATE
-# -------------------------------
-def base_snapshot(status):
-    ts = now_ist()
-    return {
+    atr = calc_atr(df)
+    vwap = calc_vwap(df)
+    last_price = df["Close"].iloc[-1]
+
+    vwap_pos = (
+        "STRONG ABOVE" if last_price > vwap * 1.005 else
+        "ABOVE" if last_price > vwap else
+        "BELOW"
+    )
+
+    snapshot = {
         "meta": {
-            "date": ts.strftime("%Y-%m-%d"),
-            "last_updated": ts.strftime("%H:%M:%S"),
+            "date": NOW.strftime("%Y-%m-%d"),
+            "last_updated": NOW.strftime("%H:%M:%S"),
             "timezone": "IST",
-            "session_status": status,
+            "session_status": "OPEN"
         },
-        "nifty": {},
-        "global_markets": {},
-        "volatility": {},
-        "market_open": {},
-        "trend_architect": {},
-        "vwap": {},
-        "previous_day": {},
-        "institutional_flows": {}
+        "nifty": {
+            "spot": round(spot, 2),
+            "change_points": change,
+            "change_percent": pct
+        },
+        "global_markets": globals_,
+        "volatility": {
+            "atr": atr,
+            "state": "EXPANDING"
+        },
+        "vwap": {
+            "position": vwap_pos,
+            "expansion_range": round(df["High"].iloc[-1] - df["Low"].iloc[-1], 2),
+            "midline": "RISING"
+        }
     }
 
-# -------------------------------
-# RESET BLOCKS (08:40 IST)
-# -------------------------------
-def reset_sensitive_blocks(snapshot):
-    snapshot["market_open"] = {
-        "gap_status": "DATA_AWAITED",
-        "open_candle": "DATA_AWAITED"
-    }
-    snapshot["trend_architect"] = {
-        "gap_behavior": "DATA_AWAITED",
-        "major_candle": "DATA_AWAITED",
-        "next_candle_relation": "DATA_AWAITED",
-        "velocity": "DATA_AWAITED"
-    }
-    return snapshot
-
-# -------------------------------
-# MAIN PRODUCER
-# -------------------------------
-def run():
-    ts = now_ist()
-
-    # Weekend / Holiday Safety
-    if is_weekend(ts) or is_holiday(ts):
-        snapshot = base_snapshot("MARKET_CLOSED")
-        write_snapshot(snapshot)
-        return
-
-    snapshot = base_snapshot("OPEN" if market_hours_open(ts) else "CLOSED")
-
-    # Reset logic at 08:40
-    if reset_window(ts):
-        snapshot = reset_sensitive_blocks(snapshot)
-        write_snapshot(snapshot)
-        return
-
-    # ------------------------------------------------
-    # NOTE:
-    # Actual data fetch & logic enters here.
-    # For Phase 1 foundation, we publish structure.
-    # ------------------------------------------------
-
-    snapshot["institutional_flows"] = {
-        "fii_today": None,
-        "dii_today": None,
-        "fii_5day": None,
-        "status": "AWAITING_DATA",
-        "last_checked": ts.strftime("%H:%M:%S")
-    }
-
-    write_snapshot(snapshot)
-
+    with open(OUTPUT_PATH, "w") as f:
+        json.dump(snapshot, f, indent=2)
 
 if __name__ == "__main__":
-    run()
+    main()
