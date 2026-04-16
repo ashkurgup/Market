@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Market Dashboard — Phase 1</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -11,118 +11,98 @@
   <h1>Market Dashboard — Phase 1</h1>
   <div id="lastUpdated" class="timestamp">Last Updated: --</div>
 
-  <!-- ===================== -->
-  <!-- NIFTY (LIVE) -->
-  <!-- ===================== -->
-  <div class="section section-primary">
-    <h2>NIFTY <span class="tag live">LIVE</span></h2>
-    <div id="niftyValue" class="value">Data Awaited</div>
-    <div class="subline">
-      Current NIFTY spot vs previous close
+  <div class="grid">
+
+    <!-- ================= LEFT COLUMN ================= -->
+    <div class="column">
+
+      <!-- NIFTY -->
+      <div class="section section-primary">
+        <h2>NIFTY <span class="tag live">LIVE</span></h2>
+        <div id="niftyValue" class="value">Data Awaited</div>
+      </div>
+
+      <!-- GLOBAL INDICES -->
+      <div class="section section-muted">
+        <h2>Global Indices <span class="tag context">Context</span></h2>
+        <ul id="globalList"></ul>
+      </div>
+
+      <!-- VOLATILITY -->
+      <div class="section">
+        <h2>Volatility (ATR)</h2>
+        <div id="atrValue" class="value">Data Awaited</div>
+        <div class="note">Higher ATR favors continuation over chop</div>
+      </div>
+
+      <!-- VWAP -->
+      <div class="section">
+        <h2>VWAP</h2>
+
+        <div class="metric-line">
+          Position: <strong id="vwapPosition">—</strong>
+        </div>
+
+        <div class="metric-line">
+          Expansion Range: <strong id="vwapRange">—</strong>
+        </div>
+
+        <div class="metric-line">
+          Midline: <strong id="vwapMid">—</strong>
+        </div>
+
+        <div class="note">
+          Price acceptance relative to VWAP with range expansion
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= RIGHT COLUMN ================= -->
+    <div class="column">
+
+      <!-- MARKET OPEN -->
+      <div class="section section-early">
+        <h2>Market Open <span class="tag frozen">Frozen</span></h2>
+
+        <div id="gapStatus" class="block-line">
+          Gap Status: Data Awaited
+        </div>
+
+        <div id="openingCandle" class="block-line">
+          Opening Candle: Data Awaited
+        </div>
+      </div>
+
+      <!-- TREND ARCHITECT -->
+      <div class="section section-spine">
+        <h2>Trend Architect <span class="tag final">Final</span></h2>
+        <div id="trendBlock">Data Awaited</div>
+      </div>
+
+      <!-- PREVIOUS DAY ANCHORS -->
+      <div class="section">
+        <h2>Previous Day Anchors</h2>
+        <div id="anchorsValue" class="value">
+          PDH — | PDL — | PDC —
+        </div>
+      </div>
+
+      <!-- FII / DII -->
+      <div class="section section-muted">
+        <h2>Institutional Flows</h2>
+        <div id="fiiDiiValue">
+          FII — | DII —<br />
+          5‑Day FII —
+        </div>
+        <div class="note">
+          Published post‑market when available
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- ===================== -->
-  <!-- GLOBAL INDICES -->
-  <!-- ===================== -->
-  <div class="section section-muted">
-    <h2>Global Indices <span class="tag context">Context</span></h2>
-    <ul id="globalList">
-      <li>Data Awaited</li>
-    </ul>
-    <div class="note">
-      Risk-on / Risk-off background only.  
-      Never a trading signal.
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- VOLATILITY -->
-  <!-- ===================== -->
-  <div class="section">
-    <h2>Volatility (ATR)</h2>
-    <div id="atrValue" class="value">Data Awaited</div>
-    <div class="note">
-      ATR expanding suggests continuation over chop (contextual)
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- VWAP -->
-  <!-- ===================== -->
-  <div class="section">
-    <h2>VWAP</h2>
-    <div id="vwapValue" class="value">Data Awaited</div>
-    <div class="note">
-      Price acceptance relative to VWAP with range expansion
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- MARKET OPEN -->
-  <!-- ===================== -->
-  <div class="section section-early">
-    <h2>Market Open <span class="tag frozen">Frozen</span></h2>
-
-    <div id="gapStatus" class="block-line">
-      Gap Status: Data Awaited
-    </div>
-
-    <div id="openingCandle" class="block-line">
-      Opening Candle: Data Awaited
-    </div>
-
-    <div class="note">
-      Gap frozen at 09:20 IST · Opening candle frozen at 09:35 IST
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- TREND ARCHITECT -->
-  <!-- ===================== -->
-  <div class="section section-spine">
-    <h2>Trend Architect <span class="tag final">Final</span></h2>
-
-    <div id="trendBlock">
-      Data Awaited
-    </div>
-
-    <div class="note emphasis">
-      Effective from 11:00 AM · Does not repaint
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- LAST DAY ANCHORS -->
-  <!-- ===================== -->
-  <div class="section">
-    <h2>Previous Day Anchors</h2>
-    <div id="anchorsValue" class="value">
-      PDH — | PDL — | PDC —
-    </div>
-    <div class="note">
-      Reference levels from prior trading day
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- FII / DII FLOWS -->
-  <!-- ===================== -->
-  <div class="section section-muted">
-    <h2>Institutional Flows</h2>
-    <div id="fiiDiiValue">
-      FII — | DII —<br />
-      5‑Day FII —
-    </div>
-    <div class="note">
-      Institutional data updates post‑market when available
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- JS -->
-  <!-- ===================== -->
   <script src="app.js"></script>
-
 </body>
 </html>
