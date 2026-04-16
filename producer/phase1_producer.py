@@ -56,7 +56,9 @@ def calc_atr(df, period=14):
 def calc_vwap(df):
     pv = (df["Close"] * df["Volume"]).cumsum()
     vol = df["Volume"].cumsum()
-    return round((pv / vol).iloc[-1], 2)
+    vwap_series = pv / vol
+    return float(vwap_series.iloc[-1])
+
 
 def main():
     spot, change, pct = fetch_nifty()
