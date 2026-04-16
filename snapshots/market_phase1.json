@@ -28,6 +28,29 @@
     "position": "ABOVE"
   },
 
+  "market_open": {
+    "gap_status": {
+      "type": "GAP_DOWN",
+      "points": -48,
+      "status_color": "RED",
+      "frozen_at": "09:20"
+    },
+    "opening_candle": {
+      "type": "DOJI",
+      "body_points": 8.65,
+      "body_percent": 13.86,
+      "color": "GREEN",
+      "ohlc": {
+        "open": 24380.25,
+        "high": 24400.1,
+        "low": 24337.7,
+        "close": 24388.9
+      },
+      "range": 62.4,
+      "frozen_at": "09:35"
+    }
+  },
+
   "trend_architect": {
     "gap_behavior": "CLOSED_BY_1105",
     "major_candle": {
