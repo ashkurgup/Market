@@ -2,24 +2,33 @@ fetch("snapshots/market_phase1.json")
   .then(res => res.json())
   .then(data => {
 
-    document.getElementById("updated").innerText =
+    // Last Updated
+    document.getElementById("lastUpdated").innerText =
       `Last Updated: ${data.meta.last_updated} IST`;
 
-    if (data.nifty?.spot) {
-      document.getElementById("nifty").innerHTML =
-        `${data.nifty.spot} (${data.nifty.change_points.toFixed(1)} / ${data.nifty.change_percent.toFixed(2)}%)`;
-    } else {
-      document.getElementById("nifty").innerText = "Data Awaited";
+    // NIFTY
+    if (data.nifty && data.nifty.spot !== undefined) {
+      const cls = data.nifty.change_points >= 0 ? "up" : "down";
+      document.getElementById("niftyValue").innerHTML =
+        `<span class="${cls}">
+          ${data.nifty.spot}
+          (${data.nifty.change_points.toFixed(1)} / ${data.nifty.change_percent.toFixed(2)}%)
+         </span>`;
     }
 
-    document.getElementById("atr").innerText =
-      data.volatility?.atr ?? "Data Awaited";
+    // ATR
+    if (data.volatility && data.volatility.atr !== undefined) {
+      document.getElementById("atrValue").innerText =
+        data.volatility.atr;
+    }
 
-    document.getElementById("vwap").innerText =
-      data.vwap?.position ?? "Data Awaited";
+    // VWAP
+    if (data.vwap && data.vwap.position) {
+      document.getElementById("vwapValue").innerText =
+        data.vwap.position;
+    }
 
   })
-  .catch(err => {
-    console.error(err);
-    document.body.innerHTML = "Failed to load market data.";
+  .catch(() => {
+    document.body.innerHTML = "Unable to load market data.";
   });
