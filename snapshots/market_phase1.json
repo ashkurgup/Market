@@ -1,1 +1,21 @@
-{}
+{
+  "meta": {
+    "date": "2026-04-16",
+    "last_updated": "13:31:48",
+    "timezone": "IST",
+    "session_status": "OPEN"
+  },
+  "nifty": {
+    "spot": 24120.7,
+    "change_points": -110.6,
+    "change_percent": -0.46
+  },
+  "volatility": {
+    "atr": 10.76,
+    "state": "EXPANDING"
+  },
+  "vwap": {
+    "position": "ABOVE",
+    "strength": "STRONG"
+  }
+}
