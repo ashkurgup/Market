@@ -1,0 +1,36 @@
+name: Phase 1 Live Market Update
+
+on:
+  schedule:
+    - cron: "*/5 3-10 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  update-market:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance pandas pytz
+
+      - name: Run Phase 1 Producer
+        run: python producer/phase1_producer.py
+
+      - name: Commit and push JSON
+        run: |
+          git config user.name "market-bot"
+          git config user.email "market-bot@github.com"
+          git add snapshots/market_phase1.json
+          git commit -m "Auto update market snapshot"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
