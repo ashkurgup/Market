@@ -1,67 +1,49 @@
 {
   "meta": {
     "date": "2026-04-16",
-    "last_updated": "13:31:48",
+    "last_updated": "20:23:13",
     "timezone": "IST",
     "session_status": "OPEN"
   },
-
   "nifty": {
-    "spot": 24120.7,
-    "change_points": -110.6,
-    "change_percent": -0.46
+    "spot": 24196.75,
+    "change_points": -15.15,
+    "change_percent": -0.06
   },
-
   "global_markets": [
-    { "name": "GIFT NIFTY", "value": 31, "direction": "UP" },
-    { "name": "DOW FUTURES", "value": -104, "direction": "DOWN" },
-    { "name": "NIKKEI", "value": 211, "direction": "UP" },
-    { "name": "DAX", "value": -63, "direction": "DOWN" },
-    { "name": "SHANGHAI", "value": 8, "direction": "UP" }
-  ],
-
-  "volatility": {
-    "atr": 10.76
-  },
-
-  "vwap": {
-    "position": "ABOVE"
-  },
-
-  "market_open": {
-    "gap_status": {
-      "type": "GAP_DOWN",
-      "points": -48,
-      "status_color": "RED",
-      "frozen_at": "09:20"
+    {
+      "name": "GIFT NIFTY",
+      "value": -15,
+      "direction": "DOWN"
     },
-    "opening_candle": {
-      "type": "DOJI",
-      "body_points": 8.65,
-      "body_percent": 13.86,
-      "color": "GREEN",
-      "ohlc": {
-        "open": 24380.25,
-        "high": 24400.1,
-        "low": 24337.7,
-        "close": 24388.9
-      },
-      "range": 62.4,
-      "frozen_at": "09:35"
+    {
+      "name": "DOW FUTURES",
+      "value": -147,
+      "direction": "DOWN"
+    },
+    {
+      "name": "NIKKEI",
+      "value": 1411,
+      "direction": "UP"
+    },
+    {
+      "name": "DAX",
+      "value": 39,
+      "direction": "UP"
+    },
+    {
+      "name": "SHANGHAI",
+      "value": 27,
+      "direction": "UP"
     }
+  ],
+  "volatility": {
+    "atr": 26.818219866071427,
+    "state": "EXPANDING"
   },
-
-  "trend_architect": {
-    "gap_behavior": "CLOSED_BY_1105",
-    "major_candle": {
-      "size": 45.3,
-      "type": "MARUBOZU",
-      "time": "09:50–09:55",
-      "color": "RED"
-    },
-    "next_candle_relation": "OPPOSING",
-    "velocity": "50 points in 2 candles",
-    "market_character": "Measured discovery with acceptance",
-    "effective_time": "11:00 AM"
+  "vwap": {
+    "position": "NEAR",
+    "expansion_range": 21.1,
+    "midline": "RISING"
   }
 }
