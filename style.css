@@ -1,0 +1,15 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 20px;
+}
+
+h1 { margin-bottom: 5px; }
+
+.card {
+  background: #111827;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
