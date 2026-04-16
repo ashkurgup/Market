@@ -21,13 +21,11 @@
   ],
 
   "volatility": {
-    "atr": 10.76,
-    "state": "EXPANDING"
+    "atr": 10.76
   },
 
   "vwap": {
-    "position": "ABOVE",
-    "strength": "STRONG"
+    "position": "ABOVE"
   },
 
   "trend_architect": {
