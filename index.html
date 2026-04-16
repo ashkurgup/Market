@@ -17,11 +17,13 @@
   <div class="section section-primary">
     <h2>NIFTY <span class="tag live">LIVE</span></h2>
     <div id="niftyValue" class="value">Data Awaited</div>
-    <div class="subline">Intraday spot price vs previous close</div>
+    <div class="subline">
+      Current NIFTY spot vs previous close
+    </div>
   </div>
 
   <!-- ===================== -->
-  <!-- GLOBAL INDICES (CONTEXT) -->
+  <!-- GLOBAL INDICES -->
   <!-- ===================== -->
   <div class="section section-muted">
     <h2>Global Indices <span class="tag context">Context</span></h2>
@@ -29,7 +31,7 @@
       <li>Data Awaited</li>
     </ul>
     <div class="note">
-      Used only as risk-on / risk-off background.  
+      Risk-on / Risk-off background only.  
       Never a trading signal.
     </div>
   </div>
@@ -41,7 +43,7 @@
     <h2>Volatility (ATR)</h2>
     <div id="atrValue" class="value">Data Awaited</div>
     <div class="note">
-      ATR expanding → intraday continuation favored (contextual)
+      ATR expanding suggests continuation over chop (contextual)
     </div>
   </div>
 
@@ -52,12 +54,12 @@
     <h2>VWAP</h2>
     <div id="vwapValue" class="value">Data Awaited</div>
     <div class="note">
-      Acceptance above VWAP with expanding range favors continuation
+      Price acceptance relative to VWAP with range expansion
     </div>
   </div>
 
   <!-- ===================== -->
-  <!-- MARKET OPEN (FROZEN) -->
+  <!-- MARKET OPEN -->
   <!-- ===================== -->
   <div class="section section-early">
     <h2>Market Open <span class="tag frozen">Frozen</span></h2>
@@ -71,12 +73,12 @@
     </div>
 
     <div class="note">
-      Gap freezes at 09:20 IST · Opening candle freezes at 09:35 IST
+      Gap frozen at 09:20 IST · Opening candle frozen at 09:35 IST
     </div>
   </div>
 
   <!-- ===================== -->
-  <!-- TREND ARCHITECT (SPINE) -->
+  <!-- TREND ARCHITECT -->
   <!-- ===================== -->
   <div class="section section-spine">
     <h2>Trend Architect <span class="tag final">Final</span></h2>
@@ -86,11 +88,41 @@
     </div>
 
     <div class="note emphasis">
-      Effective from 11:00 AM · Does not repaint afterward
+      Effective from 11:00 AM · Does not repaint
     </div>
   </div>
 
+  <!-- ===================== -->
+  <!-- LAST DAY ANCHORS -->
+  <!-- ===================== -->
+  <div class="section">
+    <h2>Previous Day Anchors</h2>
+    <div id="anchorsValue" class="value">
+      PDH — | PDL — | PDC —
+    </div>
+    <div class="note">
+      Reference levels from prior trading day
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- FII / DII FLOWS -->
+  <!-- ===================== -->
+  <div class="section section-muted">
+    <h2>Institutional Flows</h2>
+    <div id="fiiDiiValue">
+      FII — | DII —<br />
+      5‑Day FII —
+    </div>
+    <div class="note">
+      Institutional data updates post‑market when available
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- JS -->
+  <!-- ===================== -->
   <script src="app.js"></script>
+
 </body>
 </html>
-``
