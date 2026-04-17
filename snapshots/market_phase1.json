@@ -1,37 +1,37 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "14:03:12",
+    "last_updated": "14:23:10",
     "timezone": "IST"
   },
   "nifty": {
-    "spot": 24290.70,
-    "change_points": 102.3,
-    "change_percent": 0.42
+    "spot": 24318.6,
+    "change_points": 130.2,
+    "change_percent": 0.54
   },
   "volatility": {
-    "atr": 24.6
+    "atr": 25.8
   },
   "vwap": {
     "position": "NEAR",
-    "expansion_range": 12.4,
+    "expansion_range": 19.9,
     "midline": "RISING"
   },
   "market_open": {
     "gap": {
-      "direction": "UP",
-      "points": 8.25,
+      "direction": "DOWN",
+      "points": -14.8,
       "frozen_at": "09:20 AM"
     },
     "opening_candle": {
-      "type": "MARUBOZU",
+      "type": "BODY",
       "ohlc": {
-        "open": 24198.45,
-        "high": 24232.10,
-        "low": 24190.00,
-        "close": 24230.80
+        "open": 24173.6,
+        "high": 24234.15,
+        "low": 24109.45,
+        "close": 24233.35
       },
-      "range": 42.1,
+      "range": 124.7,
       "frozen_at": "09:35 AM"
     }
   },
@@ -48,15 +48,24 @@
     "effective_time": "11:00 AM"
   },
   "previous_day": {
-    "pdh": 24203.25,
-    "pdl": 24177.80,
-    "pdc": 24188.40
+    "pdh": 24203.75,
+    "pdl": 24177.8,
+    "pdc": 24188.4
   },
   "institutional_flows": {
     "fii_today": null,
     "dii_today": null,
-    "fii_last_4_days": [null, null, null, null],
-    "dii_last_4_days": [null, null, null, null]
+    "fii_last_4_days": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "dii_last_4_days": [
+      null,
+      null,
+      null,
+      null
+    ]
   }
 }
-``
