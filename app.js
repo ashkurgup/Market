@@ -12,7 +12,7 @@
   };
 
   /* =========================
-     NIFTY
+     NIFTY (LOCKED)
   ========================= */
   render(
     "box-nifty",
@@ -28,7 +28,7 @@
   );
 
   /* =========================
-     VOLATILITY (ATR)
+     VOLATILITY / ATR (LOCKED)
   ========================= */
   render(
     "box-volatility",
@@ -70,7 +70,7 @@
   );
 
   /* =========================
-     PREVIOUS DAY ANCHORS (RESTORED)
+     PREVIOUS DAY ANCHORS (LOCKED)
   ========================= */
   render(
     "box-anchors",
@@ -84,9 +84,11 @@
   );
 
   /* =========================
-     MARKET OPEN (LOCKED)
+     MARKET OPEN (NOW FINAL & LOCKED)
   ========================= */
   const oc = d.market_open.opening_candle;
+  const gap = d.market_open.gap;
+
   render(
     "box-open",
     "open",
@@ -94,7 +96,12 @@
     <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
 
     <div class="line">
-      Opening Candle:
+      <b>Gap:</b> ${gap.direction} (${gap.points})
+    </div>
+    <div class="small">Frozen at ${gap.frozen_at}</div>
+
+    <div class="line">
+      <b>Opening Candle:</b>
       <span class="${oc.color === "GREEN" ? "green" : "red"}">
         ${oc.type}
       </span>
@@ -102,17 +109,18 @@
     </div>
 
     <div class="line">
-      O ${oc.ohlc.open} | H ${oc.ohlc.high}
+      <b>O</b> ${oc.ohlc.open} | <b>H</b> ${oc.ohlc.high}
     </div>
     <div class="line">
-      L ${oc.ohlc.low} | C ${oc.ohlc.close}
+      <b>L</b> ${oc.ohlc.low} | <b>C</b> ${oc.ohlc.close}
     </div>
-    <div class="line">Range ${oc.range}</div>
+
+    <div class="line"><b>Range</b> ${oc.range}</div>
     `
   );
 
   /* =========================
-     TREND ARCHITECT (STATIC FOR PHASE‑1)
+     TREND ARCHITECT (PHASE‑1 STATIC)
   ========================= */
   render(
     "box-trend",
