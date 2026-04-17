@@ -11,7 +11,9 @@
     el.innerHTML = html;
   };
 
-  /* NIFTY */
+  /* =======================
+     NIFTY
+  ======================= */
   render("box-nifty", "nifty", `
     <h3>NIFTY <span class="small">• LIVE</span></h3>
     <div class="value">${d.nifty.spot.toFixed(2)}</div>
@@ -19,18 +21,21 @@
     <div class="small">Updated: ${d.meta.last_updated} IST</div>
   `);
 
-  /* VOLATILITY */
+  /* =======================
+     VOLATILITY + CHOPPINESS
+  ======================= */
   render("box-volatility", "volatility", `
     <h3>VOLATILITY (ATR)</h3>
     <div class="value">${safe(d.volatility?.atr)}</div>
     <div class="small">${safe(d.volatility?.sample_status)}</div>
     <div class="line">
-      <b>Choppiness:</b>
-      ${safe(d.choppiness?.state)} — ${safe(d.choppiness?.message)}
+      <b>Choppiness:</b> ${safe(d.choppiness?.state)} — ${safe(d.choppiness?.message)}
     </div>
   `);
 
-  /* VWAP */
+  /* =======================
+     VWAP
+  ======================= */
   render("box-vwap", "vwap", `
     <h3>VWAP</h3>
     <div class="line"><b>Mid:</b> ${safe(d.vwap?.mid)}</div>
@@ -42,7 +47,9 @@
     <div class="small">15‑min candle basis ${safe(d.vwap?.basis_candle_close)}</div>
   `);
 
-  /* PREVIOUS DAY */
+  /* =======================
+     PREVIOUS DAY
+  ======================= */
   render("box-anchors", "anchors", `
     <h3>PREVIOUS DAY ANCHORS</h3>
     <div class="line"><b>PDH:</b> ${safe(d.previous_day?.pdh)}</div>
@@ -50,9 +57,11 @@
     <div class="line"><b>PDC:</b> ${safe(d.previous_day?.pdc)}</div>
   `);
 
-  /* MARKET OPEN */
-  const oc = d.market_open?.opening_candle ?? {};
+  /* =======================
+     MARKET OPEN
+  ======================= */
   const gap = d.market_open?.gap ?? {};
+  const oc = d.market_open?.opening_candle ?? {};
 
   render("box-open", "open", `
     <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
@@ -63,17 +72,18 @@
       <span class="${oc.color === "GREEN" ? "green" : "red"}">${safe(oc.type)}</span>
       (Size ${safe(oc.size)} pts | Body ${safe(oc.body_pct)}%)
     </div>
-    <div class="line"><b>O</b> ${safe(oc.ohlc?.open)} | <b>H</b> ${safe(oc.ohlc?.high)}</div>
-    <div class="line"><b>L</b> ${safe(oc.ohlc?.low)} | <b>C</b> ${safe(oc.ohlc?.close)}</div>
-    <div class="line"><b>Range</b> ${safe(oc.range)}</div>
   `);
 
-  /* TREND ARCHITECT */
+  /* =======================
+     TREND ARCHITECT
+  ======================= */
   const ta = d.trend_architect ?? {};
+
   render("box-trend", "trend", `
     <h3>TREND ARCHITECT <span class="small">(MOST IMPORTANT)</span></h3>
     <div class="line"><b>Gap Behavior:</b> ${safe(ta.gap_behavior?.status)}</div>
     <div class="small">Frozen at ${safe(ta.gap_behavior?.frozen_at)}</div>
+
     <div class="line">
       <b>Major Candle:</b>
       ${safe(ta.major_candle?.range)} pts
@@ -82,18 +92,46 @@
       </span>)
       @ ${safe(ta.major_candle?.time)}
     </div>
+
     <div class="line"><b>Next Candle:</b> ${safe(ta.next_candle?.relation)}</div>
+
     <div class="line">
       <b>Total Distance:</b> ${safe(ta.distance_travelled?.points)} pts |
-      <b>Overlaps:</b> ${safe(ta.distance_travelled?.overlaps)}
+      <b>Overlaps:</b> ${safe(ta.distance_travelled?.overlaps)} |
+      <b>Small candles:</b> ${safe(ta.distance_travelled?.small_candles)}
     </div>
+
     <div class="line"><b>Market Character:</b> ${safe(ta.market_character)}</div>
   `);
 
-  /* INSTITUTIONAL FLOWS */
+  /* =======================
+     INSTITUTIONAL FLOWS
+  ======================= */
+  const flows = d.institutional_flows ?? {};
+
+  const fmt = v =>
+    v > 0 ? `<span class="green">+${v}</span>` :
+    v < 0 ? `<span class="red">${v}</span>` : "0";
+
+  const hist = (arr = []) =>
+    arr.map(x => `${x.day}: ${fmt(x.value)}`).join(" | ");
+
   render("box-flows", "institutional", `
     <h3>INSTITUTIONAL FLOWS</h3>
-    <div class="line"><b>FII:</b> —</div>
-    <div class="line"><b>DII:</b> —</div>
+
+    <div class="line">
+      <b>Today (${safe(flows.as_of)}):</b>
+      FII ${fmt(flows.today?.fii)} |
+      DII ${fmt(flows.today?.dii)}
+    </div>
+
+    <div class="small">
+      <b>FII (Last 4):</b> ${hist(flows.history_4d?.fii)}
+    </div>
+
+    <div class="small">
+      <b>DII (Last 4):</b> ${hist(flows.history_4d?.dii)}
+    </div>
   `);
 })();
+``
