@@ -1,13 +1,13 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "12:03:41",
+    "last_updated": "12:06:50",
     "timezone": "IST"
   },
   "nifty": {
-    "spot": 24260.55078125,
-    "change_points": 72.15,
-    "change_percent": 0.3
+    "spot": 24272.900390625,
+    "change_points": 84.5,
+    "change_percent": 0.35
   },
   "vwap": {
     "position": "NEAR",
