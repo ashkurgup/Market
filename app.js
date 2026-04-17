@@ -1,6 +1,8 @@
 (async () => {
-  const response = await fetch("./snapshots/market_phase1.json", { cache: "no-store" });
-  const marketData = await response.json();
+  const response = await fetch("./snapshots/market_phase1.json", {
+    cache: "no-store"
+  });
+  const d = await response.json();
 
   const render = (id, cls, html) => {
     const el = document.getElementById(id);
@@ -10,61 +12,61 @@
   };
 
   /* =========================
-     NIFTY (FROZEN UI)
+     NIFTY — FROZEN
   ========================= */
   render("box-nifty", "nifty", `
     <h3>NIFTY <span class="small">• LIVE</span></h3>
-    <div class="value">${marketData.nifty.spot.toFixed(2)}</div>
+    <div class="value">${d.nifty.spot.toFixed(2)}</div>
     <div class="line green">
-      ${marketData.nifty.change_points} (${marketData.nifty.change_percent}%)
+      ${d.nifty.change_points} (${d.nifty.change_percent}%)
     </div>
-    <div class="small">Updated: ${marketData.meta.last_updated} IST</div>
+    <div class="small">Updated: ${d.meta.last_updated} IST</div>
   `);
 
   /* =========================
-     VOLATILITY (FROZEN UI)
+     VOLATILITY — FROZEN
   ========================= */
   render("box-volatility", "volatility", `
     <h3>VOLATILITY (ATR)</h3>
-    <div class="value">${marketData.volatility.atr}</div>
-    <div class="small">${marketData.volatility.sample_status}</div>
+    <div class="value">${d.volatility.atr}</div>
+    <div class="small">${d.volatility.sample_status}</div>
     <div class="line">
       <b>Choppiness:</b>
-      ${marketData.choppiness.state} — ${marketData.choppiness.message}
+      ${d.choppiness.state} — ${d.choppiness.message}
     </div>
   `);
 
   /* =========================
-     VWAP (FROZEN UI)
+     VWAP — FROZEN
   ========================= */
   render("box-vwap", "vwap", `
     <h3>VWAP</h3>
-    <div class="line"><b>Mid:</b> ${marketData.vwap.mid}</div>
-    <div class="line"><b>Upper:</b> ${marketData.vwap.upper}</div>
-    <div class="line"><b>Lower:</b> ${marketData.vwap.lower}</div>
-    <div class="line"><b>Expansion:</b> ${marketData.vwap.expansion}</div>
-    <div class="line"><b>Position:</b> ${marketData.vwap.position}</div>
-    <div class="line"><b>Midline:</b> ${marketData.vwap.midline}</div>
+    <div class="line"><b>Mid:</b> ${d.vwap.mid}</div>
+    <div class="line"><b>Upper:</b> ${d.vwap.upper}</div>
+    <div class="line"><b>Lower:</b> ${d.vwap.lower}</div>
+    <div class="line"><b>Expansion:</b> ${d.vwap.expansion}</div>
+    <div class="line"><b>Position:</b> ${d.vwap.position}</div>
+    <div class="line"><b>Midline:</b> ${d.vwap.midline}</div>
     <div class="small">
-      15‑min candle basis ${marketData.vwap.basis_candle_close}
+      15‑min candle basis ${d.vwap.basis_candle_close}
     </div>
   `);
 
   /* =========================
-     PREVIOUS DAY ANCHORS (FROZEN UI)
+     PREVIOUS DAY — FROZEN
   ========================= */
   render("box-anchors", "anchors", `
     <h3>PREVIOUS DAY ANCHORS</h3>
-    <div class="line"><b>PDH:</b> ${marketData.previous_day.pdh}</div>
-    <div class="line"><b>PDL:</b> ${marketData.previous_day.pdl}</div>
-    <div class="line"><b>PDC:</b> ${marketData.previous_day.pdc}</div>
+    <div class="line"><b>PDH:</b> ${d.previous_day.pdh}</div>
+    <div class="line"><b>PDL:</b> ${d.previous_day.pdl}</div>
+    <div class="line"><b>PDC:</b> ${d.previous_day.pdc}</div>
   `);
 
   /* =========================
-     MARKET OPEN (FROZEN UI)
+     MARKET OPEN — FROZEN
   ========================= */
-  const oc = marketData.market_open.opening_candle;
-  const gap = marketData.market_open.gap;
+  const oc = d.market_open.opening_candle;
+  const gap = d.market_open.gap;
 
   render("box-open", "open", `
     <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
@@ -91,14 +93,12 @@
   `);
 
   /* =========================================================
-     TREND ARCHITECT (NEW — ISOLATED, DOES NOT TOUCH OTHERS)
+     TREND ARCHITECT — NEW, ISOLATED, DOES NOT TOUCH FROZEN UI
   ========================================================= */
   try {
-    const ta = marketData.trend_architect;
-    const el = document.getElementById("box-trend");
+    const ta = d.trend_architect;
 
-    el.className = "card trend";
-    el.innerHTML = `
+    render("box-trend", "trend", `
       <h3>TREND ARCHITECT <span class="small">(MOST IMPORTANT)</span></h3>
 
       <div class="line">
@@ -134,14 +134,16 @@
       <div class="line">
         <b>Market Character:</b> ${ta.market_character}
       </div>
-    `;
+    `);
   } catch (e) {
-    document.getElementById("box-trend").innerHTML =
-      "<h3>TREND ARCHITECT</h3><div>Data Awaited</div>";
+    render("box-trend", "trend", `
+      <h3>TREND ARCHITECT</h3>
+      <div class="line">Data Awaited</div>
+    `);
   }
 
   /* =========================
-     INSTITUTIONAL FLOWS (UNCHANGED)
+     INSTITUTIONAL FLOWS — UNCHANGED
   ========================= */
   render("box-flows", "institutional", `
     <h3>INSTITUTIONAL FLOWS</h3>
