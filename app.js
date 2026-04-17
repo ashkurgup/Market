@@ -1,141 +1,68 @@
-(async function () {
+(async () => {
   try {
-    // ✅ Correct path for GitHub Pages PROJECT repository
     const response = await fetch("./snapshots/market_phase1.json", {
       cache: "no-store"
     });
 
-    if (!response.ok) {
-      throw new Error("JSON fetch failed: " + response.status);
-    }
+    if (!response.ok) throw new Error("404 JSON not found");
 
     const d = await response.json();
 
-    /* =========================
-       NIFTY (LOCKED)
-    ========================= */
-    const nifty = d.nifty || {};
-    const meta = d.meta || {};
-
+    // NIFTY
     document.getElementById("box-nifty").innerHTML = `
-      <h2>NIFTY <span class="small">● LIVE</span></h2>
-      <div class="value">${(nifty.spot ?? "—").toFixed?.(2) ?? nifty.spot}</div>
-      <div class="line ${nifty.change_points >= 0 ? "green" : "red"}">
-        ${nifty.change_points ?? "—"} (${nifty.change_percent ?? "—"}%)
-      </div>
-      <div class="small">Updated: ${meta.last_updated ?? "--"} IST</div>
+      <h3>NIFTY</h3>
+      <div>${d.nifty.spot.toFixed(2)}</div>
+      <div>${d.nifty.change_points} (${d.nifty.change_percent}%)</div>
     `;
 
-    /* =========================
-       VOLATILITY (ATR)
-    ========================= */
+    // ATR
     document.getElementById("box-volatility").innerHTML = `
-      <h2>VOLATILITY (ATR)</h2>
-      <div class="value">${d.volatility?.atr ?? "—"}</div>
-      <div class="small">Higher ATR favors continuation over chop</div>
+      <h3>Volatility (ATR)</h3>
+      <div>${d.volatility?.atr ?? "—"}</div>
     `;
 
-    /* =========================
-       VWAP
-    ========================= */
-    const vwap = d.vwap || {};
+    // VWAP
     document.getElementById("box-vwap").innerHTML = `
-      <h2>VWAP</h2>
-      <div class="line tight"><b>Position:</b> ${vwap.position ?? "—"}</div>
-      <div class="line tight"><b>Expansion:</b> ${vwap.expansion_range ?? "—"}</div>
-      <div class="line tight"><b>Midline:</b> ${vwap.midline ?? "—"}</div>
-      <div class="small">15‑min candle basis</div>
+      <h3>VWAP</h3>
+      <div>Position: ${d.vwap.position}</div>
+      <div>Expansion: ${d.vwap.expansion_range}</div>
+      <div>Midline: ${d.vwap.midline}</div>
     `;
 
-    /* =========================
-       PREVIOUS DAY ANCHORS (LOCKED)
-    ========================= */
-    const prev = d.previous_day || {};
+    // Previous Day Anchors (LOCKED)
     document.getElementById("box-anchors").innerHTML = `
-      <h2>PREVIOUS DAY ANCHORS</h2>
-      <div class="line mono"><b>PDH:</b> ${prev.pdh ?? "—"}</div>
-      <div class="line mono"><b>PDL:</b> ${prev.pdl ?? "—"}</div>
-      <div class="line mono"><b>PDC:</b> ${prev.pdc ?? "—"}</div>
+      <h3>Previous Day</h3>
+      <div>PDH: ${d.previous_day.pdh}</div>
+      <div>PDL: ${d.previous_day.pdl}</div>
+      <div>PDC: ${d.previous_day.pdc}</div>
     `;
 
-    /* =========================
-       MARKET OPEN (FROZEN)
-    ========================= */
+    // Market Open
     const mo = d.market_open;
+    document.getElementById("box-open").innerHTML = mo
+      ? `<h3>Market Open</h3>
+         <div>Gap: ${mo.gap.direction} (${mo.gap.points})</div>
+         <div>Opening Candle: ${mo.opening_candle.type}</div>`
+      : `<h3>Market Open</h3><div>—</div>`;
 
-    if (mo && mo.gap && mo.opening_candle) {
-      document.getElementById("box-open").innerHTML = `
-        <h2>MARKET OPEN <span class="small">FROZEN</span></h2>
-
-        <div class="line">
-          <b>Gap:</b> ${mo.gap.direction} ${mo.gap.points}
-        </div>
-        <div class="small">Frozen at ${mo.gap.frozen_at}</div>
-
-        <div class="line"><b>Opening Candle:</b> ${mo.opening_candle.type}</div>
-        <div class="line mono">
-          O ${mo.opening_candle.ohlc.open} | H ${mo.opening_candle.ohlc.high}<br>
-          L ${mo.opening_candle.ohlc.low}  | C ${mo.opening_candle.ohlc.close}
-        </div>
-        <div class="line">Range ${mo.opening_candle.range}</div>
-      `;
-    } else {
-      document.getElementById("box-open").innerHTML = `
-        <h2>MARKET OPEN <span class="small">FROZEN</span></h2>
-        <div class="line">Gap: — (—)</div>
-        <div class="small">Frozen at --</div>
-        <div class="line">Opening Candle: —</div>
-        <div class="line mono">O — | H —<br>L — | C —</div>
-        <div class="line">Range —</div>
-      `;
-    }
-
-    /* =========================
-       TREND ARCHITECT
-    ========================= */
-    const ta = d.trend_architect || {};
-
+    // Trend Architect
     document.getElementById("box-trend").innerHTML = `
-      <h2>TREND ARCHITECT <span class="small">FINAL</span></h2>
-
-      <div class="line"><b>Gap Behavior:</b> Closed by 11:05 AM</div>
-
-      <div class="line">
-        <b>Major Candle:</b>
-        ${ta.major_candle?.size ?? "—"} pts |
-        <span class="${ta.major_candle?.direction === "UP" ? "green" : "red"}">
-          ${ta.major_candle?.type ?? "—"}
-        </span>
-        (Formed: ${ta.major_candle?.time ?? "--"} AM)
-      </div>
-
-      <div class="line">
-        <b>Next Candle:</b>
-        <span class="${ta.next_candle_relation === "OPPOSING" ? "red" : "green"}">
-          ${ta.next_candle_relation ?? "—"}
-        </span>
-      </div>
-
-      <div class="line"><b>50‑pt Travel:</b> —</div>
-      <div class="line"><b>Choppiness:</b> —</div>
-
-      <div class="small">Effective from 11:00 AM</div>
+      <h3>Trend Architect</h3>
+      <div>Major Candle: ${d.trend_architect.major_candle.type}</div>
+      <div>Next Candle: ${d.trend_architect.next_candle_relation}</div>
     `;
 
-    /* =========================
-       INSTITUTIONAL FLOWS
-    ========================= */
+    // Flows
     document.getElementById("box-flows").innerHTML = `
-      <h2>INSTITUTIONAL FLOWS (NSE – Cash)</h2>
-      <div class="line mono"><b>FII (Today):</b> —</div>
-      <div class="line mono"><b>DII (Today):</b> —</div>
-      <br>
-      <div class="line mono"><b>FII (Last 4 Days):</b> | — | — | — | —</div>
-      <div class="line mono"><b>DII (Last 4 Days):</b> | — | — | — | —</div>
+      <h3>Institutional Flows</h3>
+      <div>FII Today: —</div>
+      <div>DII Today: —</div>
+      <div>FII (Last 4): — | — | — | —</div>
+      <div>DII (Last 4): — | — | — | —</div>
     `;
 
-  } catch (err) {
-    console.error("APP ERROR:", err);
+  } catch (e) {
+    console.error(e);
     document.body.innerHTML =
       "<h2 style='color:red'>Failed to load market data</h2>";
   }
