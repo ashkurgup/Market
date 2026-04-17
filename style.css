@@ -85,3 +85,13 @@ h2 {
   color: #374151;
   font-weight: 500;
 }
+/* ===== Trend Architect semantics ===== */
+.relation-opposing {
+  color: #b91c1c;   /* same red as negative numbers */
+  font-weight: 600;
+}
+
+.relation-supporting {
+  color: #15803d;   /* same green as positive numbers */
+  font-weight: 600;
+}
