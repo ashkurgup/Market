@@ -1,97 +1,94 @@
-/* ===== BASE ===== */
-* { box-sizing: border-box; }
+/* ================= BASE ================= */
+
+* {
+  box-sizing: border-box;
+}
 
 body {
-  font-family: Inter, system-ui, sans-serif;
-  background: #f8fafc;
-  margin: 0;
-  padding: 16px;
-  color: #111827;
+  font-family: Arial, sans-serif;
+  margin: 24px;
+  background: #ffffff;
+  color: #0f172a;              /* FORCE visible text */
 }
 
-.container {
-  max-width: 1200px;
-  margin: auto;
-}
+/* ================= LAYOUT ================= */
 
-/* ===== GRID ===== */
 .grid {
   display: grid;
-  gap: 10px;
-  margin-bottom: 10px;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
 }
 
-.grid-4 { grid-template-columns: repeat(4, 1fr); }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
+/* ================= CARD ================= */
 
-/* ===== CARD ===== */
 .card {
-  background: #ffffff;
+  border: 1px solid #d1d5db;
+  padding: 16px;
   border-radius: 10px;
-  padding: 10px 12px;
-  border: 1.5px solid #e5e7eb;
+
+  /* 🔒 critical visibility rules */
+  color: #0f172a !important;
+  font-size: 14px !important;
+  opacity: 1 !important;
+  background-clip: padding-box;
 }
 
-/* Semantic borders */
-.card.nifty { border-color: #3b82f6; }
-.card.volatility { border-color: #e5e7eb; }
-.card.vwap { border-color: #e5e7eb; }
-.card.anchors { border-color: #9ca3af; }
-.card.open { border-color: #facc15; }
-.card.trend { border-color: #22c55e; }
-.card.institutional { border-color: #fb923c; }
+/* ================= HEADINGS ================= */
 
-/* ===== TEXT ===== */
-h2 {
-  font-size: 12.5px;
-  font-weight: 600;
-  margin: 0 0 6px 0;
-}
-
-.value {
+h1 {
   font-size: 26px;
+  margin-bottom: 6px;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 6px 0;
+}
+
+h3 {
+  font-size: 15px;
+  margin: 12px 0 6px;
+}
+
+/* ================= VALUES ================= */
+
+.big {
+  font-size: 22px;
   font-weight: 700;
 }
 
-.line {
-  font-size: 13px;
-  margin-top: 3px;
-  line-height: 1.35;
-}
-
-.line.tight { margin-top: 1px; }
-
-.small {
-  font-size: 11px;
+.muted {
   color: #6b7280;
-  margin-top: 4px;
+  font-size: 13px;
 }
 
-.green { color: #15803d; font-weight: 700; }
-.red { color: #b91c1c; font-weight: 700; }
+/* ================= POS / NEG ================= */
 
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-
-/* ===== PHASE SEPARATOR ===== */
-.phase-divider {
-  margin: 20px 0;
-  border-top: 2px double #9ca3af;
-  text-align: center;
-  padding-top: 6px;
-  font-size: 12px;
-  color: #374151;
-  font-weight: 500;
-}
-/* ===== Trend Architect semantics ===== */
-.relation-opposing {
-  color: #b91c1c;   /* same red as negative numbers */
+.pos {
+  color: #15803d;
   font-weight: 600;
 }
 
-.relation-supporting {
-  color: #15803d;   /* same green as positive numbers */
+.neg {
+  color: #b91c1c;
   font-weight: 600;
+}
+
+/* ================= FAINT BACKGROUNDS ================= */
+
+.card.nifty        { background: #f6f9ff; }
+.card.global       { background: #f8fafc; }
+.card.volatility   { background: #faf8ff; }
+.card.vwap         { background: #f5fbfa; }
+.card.open         { background: #fffdf5; }
+.card.trend        { background: #f6fff9; border-left: 4px solid #a7f3d0; }
+.card.institutional{ background: #fff9f3; }
+.card.anchors      { background: #fafafa; }
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
