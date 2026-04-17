@@ -5,18 +5,15 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-# =========================
-# TIME
-# =========================
 IST = pytz.timezone("Asia/Kolkata")
 NOW = datetime.now(IST)
 TODAY = NOW.date()
 
 OUTPUT_PATH = "snapshots/market_phase1.json"
 
-# =========================
+# -------------------------
 # DATA FETCH
-# =========================
+# -------------------------
 def fetch_intraday(interval):
     df = yf.download("^NSEI", interval=interval, period="2d", progress=False)
     df = df.dropna()
@@ -28,55 +25,51 @@ def fetch_nifty_spot():
     info = t.fast_info
     spot = float(info["lastPrice"])
     prev = float(info["previousClose"])
-    return spot, round(spot - prev, 2), round((spot - prev) / prev * 100, 2)
+    return round(spot, 2), round(spot - prev, 2), round((spot - prev) / prev * 100, 2)
 
-# =========================
+# -------------------------
 # PREVIOUS DAY ANCHORS
-# =========================
+# -------------------------
 def previous_day_anchors(df):
-    prev_rows = df[df.index.date < TODAY]
-    if prev_rows.empty:
+    prev = df[df.index.date < TODAY]
+    if prev.empty:
         return None
-    last = prev_rows.iloc[-1]
+    row = prev.iloc[-1]
     return {
-        "pdh": float(last["High"]),
-        "pdl": float(last["Low"]),
-        "pdc": float(last["Close"])
+        "pdh": round(float(row["High"]), 2),
+        "pdl": round(float(row["Low"]), 2),
+        "pdc": round(float(row["Close"]), 2),
     }
 
-# =========================
+# -------------------------
 # VWAP (15m)
-# =========================
+# -------------------------
 def vwap_15m(df):
     pv = (df["Close"] * df["Volume"]).cumsum()
     vol = df["Volume"].cumsum()
-    return float((pv / vol).iloc[-1])
+    return round(float((pv / vol).iloc[-1]), 2)
 
-# =========================
+# -------------------------
 # MARKET OPEN
-# =========================
+# -------------------------
 def market_open_logic(df_15, anchors):
-    today_df = df_15[df_15.index.date == TODAY]
-    opening = today_df.between_time("09:15", "09:30")
-
+    today = df_15[df_15.index.date == TODAY]
+    opening = today.between_time("09:15", "09:30")
     if opening.empty:
         return None
 
     row = opening.iloc[0]
-
-    open_p  = float(row["Open"])
-    high_p  = float(row["High"])
-    low_p   = float(row["Low"])
+    open_p = float(row["Open"])
+    high_p = float(row["High"])
+    low_p = float(row["Low"])
     close_p = float(row["Close"])
 
     gap_pts = round(open_p - anchors["pdc"], 2)
-
+    gap_type = "NO GAP"
     if gap_pts > 0:
         gap_type = "GAP UP"
     elif gap_pts < 0:
         gap_type = "GAP DOWN"
-    else:
-        gap_type = "NO GAP"
 
     body = abs(close_p - open_p)
     range_ = high_p - low_p
@@ -86,65 +79,58 @@ def market_open_logic(df_15, anchors):
     return {
         "gap_status": {
             "type": gap_type,
-            "points": gap_pts,
-            "frozen_at": "09:20"
+            "points": gap_pts
         },
         "opening_candle": {
             "type": candle_type,
             "ohlc": {
-                "open": open_p,
-                "high": high_p,
-                "low": low_p,
-                "close": close_p
+                "open": round(open_p, 2),
+                "high": round(high_p, 2),
+                "low": round(low_p, 2),
+                "close": round(close_p, 2),
             },
             "range": round(range_, 2),
-            "frozen_at": "09:35"
         }
     }
 
-# =========================
-# TREND ARCHITECT (SAFE)
-# =========================
+# -------------------------
+# TREND ARCHITECT
+# -------------------------
 def trend_architect(df_5, anchors):
     window = df_5.between_time("09:30", "11:00").copy()
     if window.empty:
         return None
 
-    window["body"] = (window["Close"] - window["Open"]).abs()
+    window["body"] = abs(window["Close"] - window["Open"])
     impulse = window.loc[window["body"].idxmax()]
-
-    impulse_open = float(impulse["Open"])
-    impulse_close = float(impulse["Close"])
-    impulse_body = abs(impulse_close - impulse_open)
 
     idx = window.index.get_loc(impulse.name)
     relation = "NA"
 
     if idx + 1 < len(window):
-        next_c = window.iloc[idx + 1]
-        next_dir = float(next_c["Close"]) - float(next_c["Open"])
-        impulse_dir = impulse_close - impulse_open
-        relation = "SUPPORTING" if np.sign(next_dir) == np.sign(impulse_dir) else "OPPOSING"
+        nxt = window.iloc[idx + 1]
+        relation = (
+            "SUPPORTING"
+            if np.sign(nxt["Close"] - nxt["Open"]) == np.sign(impulse["Close"] - impulse["Open"])
+            else "OPPOSING"
+        )
 
-    # ✅ SAFE GAP CLOSE CHECK
     lows = df_5.between_time("09:30", "11:05")["Low"].astype(float).values
     gap_closed = bool(np.any(lows <= anchors["pdc"]))
 
     return {
         "gap_behavior": "CLOSED_BY_1105" if gap_closed else "NOT_CLOSED_BY_1105",
         "major_candle": {
-            "size": round(impulse_body, 2),
-            "type": "MARUBOZU",
+            "size": round(float(abs(impulse["Close"] - impulse["Open"])), 1),
             "time": impulse.name.strftime("%H:%M")
         },
         "next_candle_relation": relation,
-        "market_character": "Measured discovery with acceptance",
-        "effective_time": "11:00 AM"
+        "market_character": "Measured discovery with acceptance"
     }
 
-# =========================
+# -------------------------
 # MAIN
-# =========================
+# -------------------------
 def main():
     df_15 = fetch_intraday("15m")
     df_5 = fetch_intraday("5m")
@@ -170,12 +156,15 @@ def main():
         "meta": {
             "date": str(TODAY),
             "last_updated": NOW.strftime("%H:%M:%S"),
-            "timezone": "IST"
+            "timezone": "IST",
         },
         "nifty": {
             "spot": spot,
             "change_points": chg,
-            "change_percent": pct
+            "change_percent": pct,
+        },
+        "volatility": {
+            "atr": round((df_15["High"] - df_15["Low"]).mean(), 1)
         },
         "vwap": {
             "position": vwap_pos,
