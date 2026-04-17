@@ -1,38 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>NIFTY – Phase 1 Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-  <div class="container">
+<div class="container">
 
-    <!-- ROW 1 -->
-    <div class="row three">
-      <div class="box nifty" id="box-nifty"></div>
-      <div class="box volatility" id="box-volatility"></div>
-      <div class="box vwap" id="box-vwap"></div>
-    </div>
-
-    <!-- ROW 2 -->
-    <div class="row two">
-      <div class="box open" id="box-open"></div>
-      <div class="box trend" id="box-trend"></div>
-    </div>
-
-    <!-- ROW 3 -->
-    <div class="row one">
-      <div class="box anchors" id="box-pdh"></div>
-    </div>
-
-    <div class="row one">
-      <div class="box institutional" id="box-flows"></div>
-    </div>
-
+  <!-- ROW 1 -->
+  <div class="grid grid-3">
+    <div class="card nifty" id="box-nifty"></div>
+    <div class="card volatility" id="box-volatility"></div>
+    <div class="card vwap" id="box-vwap"></div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- ROW 2 -->
+  <div class="grid grid-2">
+    <div class="card open" id="box-open"></div>
+    <div class="card trend" id="box-trend"></div>
+  </div>
+
+  <!-- ROW 3 -->
+  <div class="grid grid-1">
+    <div class="card anchors" id="box-pdh"></div>
+  </div>
+
+  <!-- ROW 4 -->
+  <div class="grid grid-1">
+    <div class="card institutional" id="box-flows"></div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
