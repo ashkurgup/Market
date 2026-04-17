@@ -4,33 +4,44 @@
     "last_updated": "13:36:36",
     "timezone": "IST"
   },
+
   "nifty": {
-    "spot": 24290.69921875,
+    "spot": 24290.70,
     "change_points": 102.3,
     "change_percent": 0.42
   },
+
+  "volatility": {
+    "atr": 24.6
+  },
+
   "vwap": {
     "position": "NEAR",
     "expansion_range": 9.8,
     "midline": "RISING"
   },
+
   "market_open": null,
+
   "trend_architect": {
     "gap_behavior": "CLOSED_BY_1105",
     "major_candle": {
       "size": 32.45,
       "type": "MARUBOZU",
+      "direction": "UP",
       "time": "09:35"
     },
     "next_candle_relation": "OPPOSING",
     "market_character": "Measured discovery with acceptance",
     "effective_time": "11:00 AM"
   },
+
   "previous_day": {
     "pdh": 24203.25,
-    "pdl": 24177.80078125,
-    "pdc": 24188.400390625
+    "pdl": 24177.80,
+    "pdc": 24188.40
   },
+
   "institutional_flows": {
     "status": "AWAITING_INSTITUTIONAL_DATA"
   }
