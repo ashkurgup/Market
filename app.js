@@ -1,14 +1,61 @@
 (async () => {
-  const r = await fetch("./snapshots/market_phase1.json", { cache: "no-store" });
-  const d = await r.json();
+  const response = await fetch("./snapshots/market_phase1.json", {
+    cache: "no-store",
+  });
+  const d = await response.json();
 
-  const box = (id, cls, html) => {
+  const render = (id, cls, html) => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.className = "card " + cls;
     el.innerHTML = html;
   };
 
-  box("box-vwap", "vwap", `
+  /* =========================
+     NIFTY
+  ========================= */
+  render(
+    "box-nifty",
+    "nifty",
+    `
+    <h3>NIFTY <span class="small">• LIVE</span></h3>
+    <div class="value">${d.nifty.spot.toFixed(2)}</div>
+    <div class="line green">
+      ${d.nifty.change_points} (${d.nifty.change_percent}%)
+    </div>
+    <div class="small">Updated: ${d.meta.last_updated} IST</div>
+    `
+  );
+
+  /* =========================
+     VOLATILITY (ATR)
+  ========================= */
+  render(
+    "box-volatility",
+    "volatility",
+    `
+    <h3>VOLATILITY (ATR)</h3>
+    <div class="value">
+      ${d.volatility.atr}
+      <span class="small">(${d.volatility.sample_status})</span>
+    </div>
+    <div class="line">
+      <b>Choppiness:</b>
+      ${d.choppiness.state} — ${d.choppiness.message}
+    </div>
+    <div class="small">
+      Reliable from ${d.volatility.reliable_from} IST
+    </div>
+    `
+  );
+
+  /* =========================
+     VWAP (LOCKED)
+  ========================= */
+  render(
+    "box-vwap",
+    "vwap",
+    `
     <h3>VWAP</h3>
     <div class="line"><b>Mid:</b> ${d.vwap.mid}</div>
     <div class="line"><b>Upper:</b> ${d.vwap.upper}</div>
@@ -16,12 +63,36 @@
     <div class="line"><b>Expansion:</b> ${d.vwap.expansion}</div>
     <div class="line"><b>Position:</b> ${d.vwap.position}</div>
     <div class="line"><b>Midline:</b> ${d.vwap.midline}</div>
-    <div class="small">15‑min candle basis ${d.vwap.basis_candle_close}</div>
-  `);
+    <div class="small">
+      15‑min candle basis ${d.vwap.basis_candle_close}
+    </div>
+    `
+  );
 
+  /* =========================
+     PREVIOUS DAY ANCHORS (RESTORED)
+  ========================= */
+  render(
+    "box-anchors",
+    "anchors",
+    `
+    <h3>PREVIOUS DAY ANCHORS</h3>
+    <div class="line"><b>PDH:</b> ${d.previous_day.pdh}</div>
+    <div class="line"><b>PDL:</b> ${d.previous_day.pdl}</div>
+    <div class="line"><b>PDC:</b> ${d.previous_day.pdc}</div>
+    `
+  );
+
+  /* =========================
+     MARKET OPEN (LOCKED)
+  ========================= */
   const oc = d.market_open.opening_candle;
-  box("box-open", "open", `
+  render(
+    "box-open",
+    "open",
+    `
     <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
+
     <div class="line">
       Opening Candle:
       <span class="${oc.color === "GREEN" ? "green" : "red"}">
@@ -29,6 +100,7 @@
       </span>
       (Size ${oc.size} pts | Body ${oc.body_pct}%)
     </div>
+
     <div class="line">
       O ${oc.ohlc.open} | H ${oc.ohlc.high}
     </div>
@@ -36,5 +108,41 @@
       L ${oc.ohlc.low} | C ${oc.ohlc.close}
     </div>
     <div class="line">Range ${oc.range}</div>
-  `);
+    `
+  );
+
+  /* =========================
+     TREND ARCHITECT (STATIC FOR PHASE‑1)
+  ========================= */
+  render(
+    "box-trend",
+    "trend",
+    `
+    <h3>TREND ARCHITECT <span class="small">FINAL</span></h3>
+    <div class="line">
+      <b>Major Candle:</b>
+      <span class="green bold">MARUBOZU</span>
+      <span class="small">(09:35 AM)</span>
+    </div>
+    <div class="line">
+      <b>Next Candle:</b>
+      <span class="red bold">OPPOSING</span>
+    </div>
+    `
+  );
+
+  /* =========================
+     INSTITUTIONAL FLOWS (PLACEHOLDER)
+  ========================= */
+  render(
+    "box-flows",
+    "institutional",
+    `
+    <h3>INSTITUTIONAL FLOWS</h3>
+    <div class="line"><b>FII (Today):</b> —</div>
+    <div class="line"><b>DII (Today):</b> —</div>
+    <div class="line"><b>FII (Last 4 Days):</b> | — | — | — | —</div>
+    <div class="line"><b>DII (Last 4 Days):</b> | — | — | — | —</div>
+    `
+  );
 })();
