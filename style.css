@@ -7,7 +7,7 @@ body {
   font-family: Inter, system-ui, sans-serif;
   background: #f8fafc;
   margin: 0;
-  padding: 24px;
+  padding: 16px;              /* reduced */
   color: #111827;
 }
 
@@ -19,77 +19,58 @@ body {
 /* ========== GRID LAYOUT ========== */
 .grid {
   display: grid;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 10px;                  /* reduced gap */
+  margin-bottom: 10px;        /* reduced spacing between rows */
 }
 
-.grid-3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.grid-2 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.grid-1 {
-  grid-template-columns: 1fr;
-}
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-1 { grid-template-columns: 1fr; }
 
 /* ========== CARD BASE ========== */
 .card {
   background: #ffffff;
-  border-radius: 12px;
-  padding: 16px 18px;
-  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;         /* tighter padding */
+  border: 1.5px solid #e5e7eb;
 }
 
-/* ========== SEMANTIC BORDERS (VISIBLE!) ========== */
-.card.trend {
-  border-color: #22c55e;     /* GREEN – Trend spine */
-}
+/* ========== SEMANTIC BORDERS ========== */
+.card.trend { border-color: #22c55e; }
+.card.open { border-color: #facc15; }
+.card.nifty { border-color: #3b82f6; }
+.card.institutional { border-color: #fb923c; }
+.card.anchors { border-color: #9ca3af; }
 
-.card.open {
-  border-color: #facc15;     /* YELLOW – Frozen open */
-}
-
-.card.nifty {
-  border-color: #3b82f6;     /* BLUE – Live index */
-}
-
-.card.institutional {
-  border-color: #fb923c;     /* ORANGE – Flows */
-}
-
-.card.anchors {
-  border-color: #9ca3af;     /* GREY – Reference */
-}
-
-/* ========== TYPOGRAPHY ========== */
+/* ========== TYPOGRAPHY (COMPACT) ========== */
 h2 {
-  font-size: 15px;
+  font-size: 13px;            /* reduced */
   font-weight: 600;
-  margin-bottom: 8px;
+  margin: 0 0 6px 0;          /* tighter */
 }
 
+/* Main NIFTY value */
 .value {
-  font-size: 34px;
+  font-size: 28px;            /* reduced but still dominant */
   font-weight: 700;
 }
 
+/* Lines */
 .line {
-  font-size: 14px;
-  margin-top: 4px;
-  line-height: 1.4;
+  font-size: 13px;            /* slightly smaller */
+  margin-top: 3px;
+  line-height: 1.35;          /* tighter vertical rhythm */
 }
 
 .line.tight {
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
+/* Small text */
 .small {
-  font-size: 12px;
+  font-size: 11px;
   color: #6b7280;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 /* ========== NUMBER SEMANTICS ========== */
@@ -104,5 +85,7 @@ h2 {
 }
 
 .mono {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
 }
+``
