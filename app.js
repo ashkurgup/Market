@@ -3,18 +3,21 @@ fetch("snapshots/market_phase1.json")
   .then(d => {
 
     /* BOX 1 — NIFTY */
-    const live = d.meta?.session_status === "OPEN" ? "LIVE" : "CLOSED";
-    const changeClass = d.nifty?.change_points >= 0 ? "green" : "red";
+const live = d.meta?.session_status === "OPEN" ? "LIVE" : "CLOSED";
+const sp = Number(d.nifty?.spot ?? 0).toFixed(2);
+const cp = Number(d.nifty?.change_points ?? 0).toFixed(1);
+const pct = Number(d.nifty?.change_percent ?? 0).toFixed(2);
 
-    document.getElementById("box-nifty").innerHTML = `
-      <h2>NIFTY <span class="small">● ${live}</span></h2>
-      <div class="value">${Number(d.nifty?.spot ?? 0).toFixed(2)}</div>
-      <div class="line ${changeClass}">
-        ${Number(d.nifty?.change_points ?? 0).toFixed(1)}
-        (${Number(d.nifty?.change_percent ?? 0).toFixed(2)}%)
-      </div>
-      <div class="small">Updated: ${d.meta?.last_updated ?? "--"} IST</div>
-    `;
+const changeClass = cp >= 0 ? "green" : "red";
+
+document.getElementById("box-nifty").innerHTML = `
+  <h2>NIFTY <span class="small">● ${live}</span></h2>
+  <div class="value">${sp}</div>
+  <div class="line ${changeClass}">
+    ${cp} (${pct}%)
+  </div>
+  <div class="small">Updated: ${d.meta?.last_updated ?? "--"} IST</div>
+`;
 
     /* BOX 2 — VOLATILITY */
     document.getElementById("box-volatility").innerHTML = `
