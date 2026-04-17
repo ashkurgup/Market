@@ -1,20 +1,35 @@
 body {
   font-family: Arial, sans-serif;
-  margin: 20px;
+  margin: 24px;
+  background: #ffffff;
+}
+
+h1 {
+  margin-bottom: 6px;
+}
+
+h2, h3 {
+  margin-top: 16px;
+}
+
+.muted {
+  color: #666;
+  font-size: 13px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 24px;
 }
 
-h2, h3 {
-  margin-top: 15px;
+.card {
+  border: 1px solid #ddd;
+  padding: 16px;
+  border-radius: 8px;
 }
 
-#niftyValue {
+.big {
   font-size: 22px;
   font-weight: bold;
 }
-``
