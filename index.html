@@ -1,28 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Market Dashboard – Phase 1</title>
-  <link rel="stylesheet" href="style.csscontainer">
+  <link rel="stylesheet" href="style.css">
+</head>
 
-  <div class="grid grid-4">
-    <div class="card" id="box-nifty"></div>
-    <div class="card" id="box-volatility"></div>
-    <div class="card" id="box-vwap"></div>
-    <div class="card" id="box-anchors"></div>
+<body>
+  <div class="container">
+
+    <!-- ===== Row 1 ===== -->
+    <div class="grid grid-4">
+      <div class="card" id="box-nifty"></div>
+      <div class="card" id="box-volatility"></div>
+      <div class="card" id="box-vwap"></div>
+      <div class="card" id="box-anchors"></div>
+    </div>
+
+    <!-- ===== Row 2 ===== -->
+    <div class="grid grid-3">
+      <div class="card" id="box-open"></div>
+      <div class="card" id="box-trend"></div>
+      <div class="card" id="box-flows"></div>
+    </div>
+
+    <div class="phase-divider">Phase 1 ends here</div>
+
   </div>
 
-  <div class="grid grid-3">
-    <div class="card" id="box-open"></div>
-    <div class="card" id="box-trend"></div>
-    <div class="card" id="box-flows"></div>
-  </div>
-
-  <div class="phase-divider">Phase 1 ends here</div>
-
-</div>
-
-<!-- JS MUST be loaded like this -->
-<script srcipt>
+  <!-- ✅ SCRIPT MUST LOAD LAST -->
+  <script src="app.js"></script>
 </body>
 </html>
