@@ -49,19 +49,19 @@
       "frozen_at": "11:05 IST"
     },
     "major_candle": {
-      "range": 55.1,
+      "range": 36.05,
       "type": "MARUBOZU",
-      "color": "GREEN",
-      "time": "09:35"
+      "color": "RED",
+      "time": "09:30"
     },
     "next_candle": {
-      "relation": "OPPOSING",
-      "color": "RED"
+      "relation": "OPPOSING"
     },
     "distance_travelled": {
-      "points": 26.05,
+      "points": 14.35,
       "direction": "UP",
-      "overlaps": 4
+      "overlaps": 4,
+      "small_candles": 12
     },
     "market_character": "Upward movement with frequent overlap \u2014 be cautious"
   },
