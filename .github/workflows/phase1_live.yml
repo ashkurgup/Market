@@ -8,37 +8,18 @@ on:
 jobs:
   phase1:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
+      - run: |
           pip install -r requirements.txt
-
-      - name: Run Phase 1 Producer
-        env:
-          TZ: Asia/Kolkata
-        run: |
+      - run: |
           python producer/phase1_producer.py
-
-      - name: Commit and push JSON (only if changed)
-        run: |
+      - run: |
           git config user.name "market-bot"
           git config user.email "market-bot@users.noreply.github.com"
-
           git add snapshots/market_phase1.json
-
-          if git diff --cached --quiet; then
-            echo "✅ No changes in market snapshot. Skipping commit."
-          else
-            git commit -m "Update Phase 1 market snapshot"
-            git push
-          fi
+          git commit -m "Update snapshot" || echo "No changes"
+          git push
