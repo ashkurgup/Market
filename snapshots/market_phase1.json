@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "17:04:41",
+    "last_updated": "17:46:28",
     "timezone": "IST"
   },
   "nifty": {
@@ -13,10 +13,6 @@
     "atr": 24.5,
     "sample_status": "Enough Sample",
     "reliable_from": "13:00"
-  },
-  "choppiness": {
-    "state": "Low",
-    "message": "Continuation\u2011Friendly Environment"
   },
   "vwap": {
     "mid": 24282.39,
@@ -57,8 +53,8 @@
     }
   },
   "previous_day": {
-    "pdh": 24203.25,
-    "pdl": 24177.8,
-    "pdc": 24188.4
+    "pdh": 24370.25,
+    "pdl": 24109.45,
+    "pdc": 24366.9
   }
 }
