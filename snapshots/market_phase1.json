@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "18:06:58",
+    "last_updated": "20:16:21",
     "timezone": "IST"
   },
   "nifty": {
@@ -10,9 +10,8 @@
     "change_percent": 0.74
   },
   "volatility": {
-    "atr": 24.5,
-    "sample_status": "Enough Sample",
-    "reliable_from": "13:00"
+    "atr": 44.64,
+    "sample_status": "Enough Sample"
   },
   "vwap": {
     "mid": 24282.39,
@@ -45,16 +44,34 @@
     }
   },
   "trend_architect": {
+    "gap_behavior": {
+      "status": "Closed by 11:05",
+      "frozen_at": "11:05 IST"
+    },
     "major_candle": {
+      "range": 55.1,
       "type": "MARUBOZU",
-      "size": 32.45,
-      "direction": "GREEN",
+      "color": "GREEN",
       "time": "09:35"
-    }
+    },
+    "next_candle": {
+      "relation": "OPPOSING",
+      "color": "RED"
+    },
+    "distance_travelled": {
+      "points": 26.05,
+      "direction": "UP",
+      "overlaps": 4
+    },
+    "market_character": "Upward movement with frequent overlap \u2014 be cautious"
   },
   "previous_day": {
     "pdh": 24370.25,
     "pdl": 24109.45,
     "pdc": 24366.9
+  },
+  "choppiness": {
+    "state": "High",
+    "message": "Expect large pullbacks"
   }
 }
