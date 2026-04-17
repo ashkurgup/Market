@@ -7,7 +7,7 @@
 
     const d = await response.json();
 
-    /* Small helper: safe box renderer */
+    /* Safe render helper */
     function render(id, cls, html) {
       const el = document.getElementById(id);
       if (!el) return;
@@ -28,7 +28,7 @@
         ${d.nifty?.change_points ?? "—"} (${d.nifty?.change_percent ?? "—"}%)
       </div>
       <div class="small">Updated: ${d.meta?.last_updated ?? "--"} IST</div>
-    `
+      `
     );
 
     /* =========================
@@ -44,13 +44,13 @@
         <span class="small">(${d.volatility?.sample_status ?? "—"})</span>
       </div>
       <div class="line">
-        <strong>Choppiness:</strong>
+        <b>Choppiness:</b>
         ${d.choppiness?.state ?? "—"} — ${d.choppiness?.message ?? "—"}
       </div>
       <div class="small">
         Reliable from ${d.volatility?.reliable_from ?? "--"} IST
       </div>
-    `
+      `
     );
 
     /* =========================
@@ -67,7 +67,7 @@
       <div class="small">
         15‑min candle basis ${d.vwap?.basis_candle_close ?? "--:--"}
       </div>
-    `
+      `
     );
 
     /* =========================
@@ -81,43 +81,65 @@
       <div class="line"><b>PDH:</b> ${d.previous_day?.pdh ?? "—"}</div>
       <div class="line"><b>PDL:</b> ${d.previous_day?.pdl ?? "—"}</div>
       <div class="line"><b>PDC:</b> ${d.previous_day?.pdc ?? "—"}</div>
-    `
+      `
     );
 
     /* =========================
        MARKET OPEN (FROZEN)
     ========================= */
     const mo = d.market_open;
-render(
-  "box-open",
-  "open",
-  `
-  <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
-  <div class="line"><b>Gap:</b> ${mo.gap.direction} (${mo.gap.points})</div>
-  <div class="small">Frozen at ${mo.gap.frozen_at}</div>
 
-  <div class="line">
-    <b>Opening Candle:</b>
-    <span class="
-      ${mo.opening_candle.color === "GREEN" ? "green" :
-        mo.opening_candle.color === "RED" ? "red" : "bold"}
-    ">
-      ${mo.opening_candle.type}
-    </span>
-    (${mo.opening_candle.size} pts)
-  </div>
+    if (mo && mo.opening_candle) {
+      const bodyPct = mo.opening_candle.range > 0
+        ? Math.round((mo.opening_candle.size / mo.opening_candle.range) * 100)
+        : 0;
 
-  <div class="line">
-    O ${mo.opening_candle.ohlc.open}
-    | H ${mo.opening_candle.ohlc.high}
-  </div>
-  <div class="line">
-    L ${mo.opening_candle.ohlc.low}
-    | C ${mo.opening_candle.ohlc.close}
-  </div>
-  <div class="line">Range ${mo.opening_candle.range}</div>
-`
-);
+      const candleClass =
+        mo.opening_candle.color === "GREEN"
+          ? "green"
+          : mo.opening_candle.color === "RED"
+          ? "red"
+          : "bold";
+
+      render(
+        "box-open",
+        "open",
+        `
+        <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
+        <div class="line">
+          <b>Gap:</b> ${mo.gap?.direction ?? "—"} (${mo.gap?.points ?? "—"})
+        </div>
+        <div class="small">Frozen at ${mo.gap?.frozen_at ?? "--"}</div>
+
+        <div class="line">
+          <b>Opening Candle:</b>
+          <span class="${candleClass}">
+            ${mo.opening_candle.type}
+          </span>
+          (Size ${mo.opening_candle.size} pts | Body ${bodyPct}%)
+        </div>
+
+        <div class="line">
+          O ${mo.opening_candle.ohlc?.open ?? "—"} |
+          H ${mo.opening_candle.ohlc?.high ?? "—"}
+        </div>
+        <div class="line">
+          L ${mo.opening_candle.ohlc?.low ?? "—"} |
+          C ${mo.opening_candle.ohlc?.close ?? "—"}
+        </div>
+        <div class="line">Range ${mo.opening_candle.range ?? "—"}</div>
+        `
+      );
+    } else {
+      render(
+        "box-open",
+        "open",
+        `
+        <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
+        <div class="line">—</div>
+        `
+      );
+    }
 
     /* =========================
        TREND ARCHITECT
@@ -129,9 +151,9 @@ render(
       <h3>TREND ARCHITECT <span class="small">FINAL</span></h3>
       <div class="line"><b>Gap Behavior:</b> Closed by 11:05 AM</div>
       <div class="line">
-        <b>Major Candle:</b> 32.45 pts |
+        <b>Major Candle:</b>
         <span class="green bold">MARUBOZU</span>
-        <span class="small">(Formed: 09:35 AM)</span>
+        <span class="small">(09:35 AM)</span>
       </div>
       <div class="line">
         <b>Next Candle:</b>
@@ -140,7 +162,7 @@ render(
       <div class="line"><b>50‑pt Travel:</b> —</div>
       <div class="line"><b>Choppiness:</b> —</div>
       <div class="small">Effective from 11:00 AM</div>
-    `
+      `
     );
 
     /* =========================
@@ -156,7 +178,7 @@ render(
       <div class="line"><b>FII (Last 4 Days):</b> | — | — | — | —</div>
       <div class="line"><b>DII (Last 4 Days):</b> | — | — | — | —</div>
       <div class="small">Published post‑market</div>
-    `
+      `
     );
 
   } catch (err) {
@@ -165,4 +187,3 @@ render(
       "<h2 style='color:red'>Failed to load market data</h2>";
   }
 })();
-``
