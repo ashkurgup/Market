@@ -2,6 +2,8 @@
   const response = await fetch("./snapshots/market_phase1.json", { cache: "no-store" });
   const d = await response.json();
 
+  const safe = (v, fb = "—") => (v === undefined || v === null ? fb : v);
+
   const render = (id, cls, html) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -20,87 +22,72 @@
   /* VOLATILITY */
   render("box-volatility", "volatility", `
     <h3>VOLATILITY (ATR)</h3>
-    <div class="value">${d.volatility.atr}</div>
-    <div class="small">${d.volatility.sample_status}</div>
+    <div class="value">${safe(d.volatility?.atr)}</div>
+    <div class="small">${safe(d.volatility?.sample_status)}</div>
     <div class="line">
-      <b>Choppiness:</b> ${d.choppiness.state} — ${d.choppiness.message}
+      <b>Choppiness:</b>
+      ${safe(d.choppiness?.state)} — ${safe(d.choppiness?.message)}
     </div>
   `);
 
   /* VWAP */
   render("box-vwap", "vwap", `
     <h3>VWAP</h3>
-    <div class="line"><b>Mid:</b> ${d.vwap.mid}</div>
-    <div class="line"><b>Upper:</b> ${d.vwap.upper}</div>
-    <div class="line"><b>Lower:</b> ${d.vwap.lower}</div>
-    <div class="line"><b>Expansion:</b> ${d.vwap.expansion}</div>
-    <div class="line"><b>Position:</b> ${d.vwap.position}</div>
-    <div class="line"><b>Midline:</b> ${d.vwap.midline}</div>
-    <div class="small">15‑min candle basis ${d.vwap.basis_candle_close}</div>
+    <div class="line"><b>Mid:</b> ${safe(d.vwap?.mid)}</div>
+    <div class="line"><b>Upper:</b> ${safe(d.vwap?.upper)}</div>
+    <div class="line"><b>Lower:</b> ${safe(d.vwap?.lower)}</div>
+    <div class="line"><b>Expansion:</b> ${safe(d.vwap?.expansion)}</div>
+    <div class="line"><b>Position:</b> ${safe(d.vwap?.position)}</div>
+    <div class="line"><b>Midline:</b> ${safe(d.vwap?.midline)}</div>
+    <div class="small">15‑min candle basis ${safe(d.vwap?.basis_candle_close)}</div>
   `);
 
   /* PREVIOUS DAY */
   render("box-anchors", "anchors", `
     <h3>PREVIOUS DAY ANCHORS</h3>
-    <div class="line"><b>PDH:</b> ${d.previous_day.pdh}</div>
-    <div class="line"><b>PDL:</b> ${d.previous_day.pdl}</div>
-    <div class="line"><b>PDC:</b> ${d.previous_day.pdc}</div>
+    <div class="line"><b>PDH:</b> ${safe(d.previous_day?.pdh)}</div>
+    <div class="line"><b>PDL:</b> ${safe(d.previous_day?.pdl)}</div>
+    <div class="line"><b>PDC:</b> ${safe(d.previous_day?.pdc)}</div>
   `);
 
   /* MARKET OPEN */
-  const oc = d.market_open.opening_candle;
-  const gap = d.market_open.gap;
+  const oc = d.market_open?.opening_candle ?? {};
+  const gap = d.market_open?.gap ?? {};
 
   render("box-open", "open", `
     <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
-    <div class="line"><b>Gap:</b> ${gap.direction} (${gap.points})</div>
-    <div class="small">Frozen at ${gap.frozen_at}</div>
+    <div class="line"><b>Gap:</b> ${safe(gap.direction)} (${safe(gap.points)})</div>
+    <div class="small">Frozen at ${safe(gap.frozen_at)}</div>
     <div class="line">
       <b>Opening Candle:</b>
-      <span class="${oc.color === "GREEN" ? "green" : "red"}">${oc.type}</span>
-      (Size ${oc.size} pts | Body ${oc.body_pct}%)
+      <span class="${oc.color === "GREEN" ? "green" : "red"}">${safe(oc.type)}</span>
+      (Size ${safe(oc.size)} pts | Body ${safe(oc.body_pct)}%)
     </div>
-    <div class="line"><b>O</b> ${oc.ohlc.open} | <b>H</b> ${oc.ohlc.high}</div>
-    <div class="line"><b>L</b> ${oc.ohlc.low} | <b>C</b> ${oc.ohlc.close}</div>
-    <div class="line"><b>Range</b> ${oc.range}</div>
+    <div class="line"><b>O</b> ${safe(oc.ohlc?.open)} | <b>H</b> ${safe(oc.ohlc?.high)}</div>
+    <div class="line"><b>L</b> ${safe(oc.ohlc?.low)} | <b>C</b> ${safe(oc.ohlc?.close)}</div>
+    <div class="line"><b>Range</b> ${safe(oc.range)}</div>
   `);
 
   /* TREND ARCHITECT */
-  const ta = d.trend_architect;
-
+  const ta = d.trend_architect ?? {};
   render("box-trend", "trend", `
     <h3>TREND ARCHITECT <span class="small">(MOST IMPORTANT)</span></h3>
-
-    <div class="line">
-      <b>Gap Behavior:</b> ${ta.gap_behavior.status}
-    </div>
-    <div class="small">Frozen at ${ta.gap_behavior.frozen_at}</div>
-
+    <div class="line"><b>Gap Behavior:</b> ${safe(ta.gap_behavior?.status)}</div>
+    <div class="small">Frozen at ${safe(ta.gap_behavior?.frozen_at)}</div>
     <div class="line">
       <b>Major Candle:</b>
-      ${ta.major_candle.range} pts
-      (<span class="${ta.major_candle.color === "GREEN" ? "green" : "red"}">${ta.major_candle.type}</span>)
-      @ ${ta.major_candle.time}
+      ${safe(ta.major_candle?.range)} pts
+      (<span class="${ta.major_candle?.color === "GREEN" ? "green" : "red"}">
+        ${safe(ta.major_candle?.type)}
+      </span>)
+      @ ${safe(ta.major_candle?.time)}
     </div>
-
+    <div class="line"><b>Next Candle:</b> ${safe(ta.next_candle?.relation)}</div>
     <div class="line">
-      <b>Next Candle:</b>
-      <span class="${ta.next_candle.color === "GREEN" ? "green" : "red"}">
-        ${ta.next_candle.relation}
-      </span>
+      <b>Total Distance:</b> ${safe(ta.distance_travelled?.points)} pts |
+      <b>Overlaps:</b> ${safe(ta.distance_travelled?.overlaps)}
     </div>
-
-    <div class="line">
-      <b>Total Distance Travelled (09:30–11:05):</b>
-      <span class="${ta.distance_travelled.direction === "UP" ? "green" : "red"}">
-        ${ta.distance_travelled.points} pts
-      </span>
-      | <b>Overlapping Candles:</b> ${ta.distance_travelled.overlaps}
-    </div>
-
-    <div class="line">
-      <b>Market Character:</b> ${ta.market_character}
-    </div>
+    <div class="line"><b>Market Character:</b> ${safe(ta.market_character)}</div>
   `);
 
   /* INSTITUTIONAL FLOWS */
