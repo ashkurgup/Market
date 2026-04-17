@@ -4,24 +4,28 @@
       cache: "no-store"
     });
 
-    if (!response.ok) throw new Error("404 JSON not found");
+    if (!response.ok) {
+      throw new Error("JSON not found (404)");
+    }
 
     const d = await response.json();
 
-    // NIFTY
+    // ===== NIFTY =====
     document.getElementById("box-nifty").innerHTML = `
       <h3>NIFTY</h3>
       <div>${d.nifty.spot.toFixed(2)}</div>
       <div>${d.nifty.change_points} (${d.nifty.change_percent}%)</div>
+      <small>${d.meta.last_updated} IST</small>
     `;
 
-    // ATR
+    // ===== ATR =====
     document.getElementById("box-volatility").innerHTML = `
       <h3>Volatility (ATR)</h3>
-      <div>${d.volatility?.atr ?? "—"}</div>
+      <div>${d.volatility.atr}</div>
+      <small>Higher ATR favors continuation over chop</small>
     `;
 
-    // VWAP
+    // ===== VWAP =====
     document.getElementById("box-vwap").innerHTML = `
       <h3>VWAP</h3>
       <div>Position: ${d.vwap.position}</div>
@@ -29,7 +33,7 @@
       <div>Midline: ${d.vwap.midline}</div>
     `;
 
-    // Previous Day Anchors (LOCKED)
+    // ===== PREVIOUS DAY =====
     document.getElementById("box-anchors").innerHTML = `
       <h3>Previous Day</h3>
       <div>PDH: ${d.previous_day.pdh}</div>
@@ -37,32 +41,32 @@
       <div>PDC: ${d.previous_day.pdc}</div>
     `;
 
-    // Market Open
+    // ===== MARKET OPEN =====
     const mo = d.market_open;
-    document.getElementById("box-open").innerHTML = mo
-      ? `<h3>Market Open</h3>
-         <div>Gap: ${mo.gap.direction} (${mo.gap.points})</div>
-         <div>Opening Candle: ${mo.opening_candle.type}</div>`
-      : `<h3>Market Open</h3><div>—</div>`;
+    document.getElementById("box-open").innerHTML = `
+      <h3>Market Open (Frozen)</h3>
+      <div>Gap: ${mo.gap.direction} (${mo.gap.points})</div>
+      <div>Opening Candle: ${mo.opening_candle.type}</div>
+    `;
 
-    // Trend Architect
+    // ===== TREND =====
     document.getElementById("box-trend").innerHTML = `
       <h3>Trend Architect</h3>
       <div>Major Candle: ${d.trend_architect.major_candle.type}</div>
       <div>Next Candle: ${d.trend_architect.next_candle_relation}</div>
     `;
 
-    // Flows
+    // ===== FLOWS =====
     document.getElementById("box-flows").innerHTML = `
       <h3>Institutional Flows</h3>
-      <div>FII Today: —</div>
-      <div>DII Today: —</div>
+      <div>FII (Today): —</div>
+      <div>DII (Today): —</div>
       <div>FII (Last 4): — | — | — | —</div>
       <div>DII (Last 4): — | — | — | —</div>
     `;
 
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error(err);
     document.body.innerHTML =
       "<h2 style='color:red'>Failed to load market data</h2>";
   }
