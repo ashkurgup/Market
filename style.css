@@ -1,29 +1,108 @@
-/* Card base — white with border */
-.box {
+/* ========== RESET / BASE ========== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+  background: #f8fafc;
+  margin: 0;
+  padding: 24px;
+  color: #111827;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* ========== GRID LAYOUT ========== */
+.grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+/* ========== CARD BASE ========== */
+.card {
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 16px 18px;
-  border: 1.5px solid #e5e7eb;
+  border: 2px solid #e5e7eb;
 }
 
-/* Spine emphasis */
-.box.trend {
-  border-color: #86efac;
+/* ========== SEMANTIC BORDERS (VISIBLE!) ========== */
+.card.trend {
+  border-color: #22c55e;     /* GREEN – Trend spine */
 }
 
-/* Typography spacing */
+.card.open {
+  border-color: #facc15;     /* YELLOW – Frozen open */
+}
+
+.card.nifty {
+  border-color: #3b82f6;     /* BLUE – Live index */
+}
+
+.card.institutional {
+  border-color: #fb923c;     /* ORANGE – Flows */
+}
+
+.card.anchors {
+  border-color: #9ca3af;     /* GREY – Reference */
+}
+
+/* ========== TYPOGRAPHY ========== */
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.value {
+  font-size: 34px;
+  font-weight: 700;
+}
+
 .line {
   font-size: 14px;
-  line-height: 1.45;
   margin-top: 4px;
+  line-height: 1.4;
 }
 
-/* Tighter spacing for VWAP lines */
 .line.tight {
   margin-top: 2px;
 }
 
-/* Remove shadows completely */
-.box {
-  box-shadow: none;
+.small {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* ========== NUMBER SEMANTICS ========== */
+.green {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.red {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
 }
