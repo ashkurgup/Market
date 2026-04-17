@@ -23,10 +23,6 @@ def ensure_ist_index(df):
     return df
 
 def normalize_columns(df):
-    """
-    yfinance may return MultiIndex columns.
-    Flatten safely and lowercase.
-    """
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = [c[0].lower() for c in df.columns]
     else:
@@ -34,7 +30,7 @@ def normalize_columns(df):
     return df
 
 # =========================
-# Fetch 5m Data
+# Fetch Data
 # =========================
 def fetch_5m_data(symbol="^NSEI"):
     df = yf.download(
@@ -45,118 +41,97 @@ def fetch_5m_data(symbol="^NSEI"):
     )
     if df.empty:
         return df
-
     df = ensure_ist_index(df)
     df = normalize_columns(df)
-    return df
+    return df.sort_index()
 
 df = fetch_5m_data()
 if df.empty:
     raise RuntimeError("No data fetched")
 
-df = df.sort_index()
-
 # =========================
 # Time Windows
 # =========================
 START = time(9, 30)
+END = time(11, 0)
 FREEZE = time(11, 5)
-MAJOR_END = time(11, 0)
 
-df_0930 = df[df.index.time >= START]
-df_freeze = df_0930[df_0930.index.time <= FREEZE]
+df_window = df[(df.index.time >= START) & (df.index.time <= END)]
 
 # =========================
-# VOLATILITY (ATR)
-# =========================
-atr_series = (
-    df_freeze["high"].rolling(3).max()
-    - df_freeze["low"].rolling(3).min()
-)
-atr = safe_float(atr_series.mean())
-
-sample_status = (
-    "Enough Sample" if now_ist().time() >= time(13, 0) else "Less Sample"
-)
-
-# ✅ Choppiness (final wording)
-if atr > 40:
-    chop_state = "High"
-    chop_msg = "Expect large pullbacks"
-elif atr > 20:
-    chop_state = "Moderate"
-    chop_msg = "Expansion exists but strong evidence needed"
-else:
-    chop_state = "Low"
-    chop_msg = "Continuation friendly environment"
-
-# =========================
-# TREND ARCHITECT (FREEZES @ 11:05)
+# TREND ARCHITECT (FREEZES)
 # =========================
 trend_architect = {}
 
-if now_ist().time() >= FREEZE and not df_freeze.empty:
-    # ---- Gap Behavior ----
+if now_ist().time() >= FREEZE and not df_window.empty:
+    # ---- Gap Behavior (unchanged) ----
     trend_architect["gap_behavior"] = {
         "status": "Closed by 11:05",
         "frozen_at": "11:05 IST"
     }
 
-    # ---- Major Candle ----
-    window = df_0930[df_0930.index.time <= MAJOR_END].copy()
-    window["range"] = window["high"] - window["low"]
-    major = window.loc[window["range"].idxmax()]
+    # ---- Major Candle (BODY) ----
+    df_window["body"] = (df_window["close"] - df_window["open"]).abs()
+    major = df_window.loc[df_window["body"].idxmax()]
 
     major_color = "GREEN" if major["close"] > major["open"] else "RED"
-    major_range = safe_float(major["range"])
 
     trend_architect["major_candle"] = {
-        "range": major_range,
+        "range": safe_float(major["body"]),
         "type": "MARUBOZU",
         "color": major_color,
         "time": major.name.strftime("%H:%M")
     }
 
     # ---- Next Candle Relation ----
-    after = window[window.index > major.name]
-    if after.empty:
+    after_major = df_window[df_window.index > major.name]
+    if after_major.empty:
         relation = "NA"
-        rc = "GREY"
     else:
-        nxt = after.iloc[0]
+        nxt = after_major.iloc[0]
         relation = (
             "SUPPORTING"
             if (nxt["close"] - nxt["open"]) * (major["close"] - major["open"]) > 0
             else "OPPOSING"
         )
-        rc = "GREEN" if relation == "SUPPORTING" else "RED"
 
     trend_architect["next_candle"] = {
-        "relation": relation,
-        "color": rc
+        "relation": relation
     }
 
-    # ---- Distance + Overlaps ----
-    total_distance = safe_float(
-        df_freeze.iloc[-1]["close"] - df_0930.iloc[0]["open"]
-    )
+    # ---- Total Distance (09:30 → 11:00) ----
+    open_0930 = df_window.iloc[0]["open"]
+    close_1100 = df_window[df_window.index.time == END]["close"].iloc[0]
 
+    total_distance = safe_float(close_1100 - open_0930)
+
+    # ---- Overlaps + Small Candles ----
     overlaps = 0
-    for i in range(1, len(df_freeze)):
-        p = df_freeze.iloc[i - 1]
-        c = df_freeze.iloc[i]
+    small_candles = 0
 
-        bp = sorted([p["open"], p["close"]])
-        bc = sorted([c["open"], c["close"]])
-        ob = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
+    for i in range(1, len(df_window)):
+        prev = df_window.iloc[i - 1]
+        cur = df_window.iloc[i]
 
-        if (bc[1] - bc[0]) > 0 and ob >= 0.8 * (bc[1] - bc[0]):
+        # Body overlap
+        bp = sorted([prev["open"], prev["close"]])
+        bc = sorted([cur["open"], cur["close"]])
+
+        overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
+        body_size = bc[1] - bc[0]
+
+        if body_size > 0 and overlap >= 0.8 * body_size:
             overlaps += 1
+
+        # Small candle (high-low)
+        if (cur["high"] - cur["low"]) < 25:
+            small_candles += 1
 
     trend_architect["distance_travelled"] = {
         "points": total_distance,
         "direction": "UP" if total_distance > 0 else "DOWN",
-        "overlaps": overlaps
+        "overlaps": overlaps,
+        "small_candles": small_candles
     }
 
     # ---- Market Character ----
@@ -170,27 +145,12 @@ if now_ist().time() >= FREEZE and not df_freeze.empty:
     trend_architect["market_character"] = mc
 
 # =========================
-# WRITE SNAPSHOT (MERGE-SAFE)
+# WRITE SNAPSHOT (MERGE SAFE)
 # =========================
 with open("snapshots/market_phase1.json", "r") as f:
     existing = json.load(f)
 
-existing.update({
-    "meta": {
-        "date": now_ist().strftime("%Y-%m-%d"),
-        "last_updated": now_ist().strftime("%H:%M:%S"),
-        "timezone": "IST"
-    },
-    "volatility": {
-        "atr": atr,
-        "sample_status": sample_status
-    },
-    "choppiness": {
-        "state": chop_state,
-        "message": chop_msg
-    },
-    "trend_architect": trend_architect
-})
+existing["trend_architect"] = trend_architect
 
 with open("snapshots/market_phase1.json", "w") as f:
     json.dump(existing, f, indent=2)
