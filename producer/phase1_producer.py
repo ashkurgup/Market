@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 import yfinance as yf
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 import pytz
 
 # -----------------------------
@@ -36,11 +36,65 @@ def calculate_atr_15m(df, period=14):
 # VWAP (TradingView‑consistent)
 # -----------------------------
 def calculate_vwap_15m(df):
-    typical_price = (df["High"] + df["Low"] + df["Close"]) / 3
-    volume = df["Volume"]
-
-    vwap = (typical_price * volume).sum() / volume.sum()
+    tp = (df["High"] + df["Low"] + df["Close"]) / 3
+    vol = df["Volume"]
+    vwap = (tp * vol).sum() / vol.sum()
     return round(float(vwap), 2)
+
+# -----------------------------
+# MARKET OPEN (FROZEN)
+# -----------------------------
+def calculate_market_open(df_today_15m, prev_close):
+    first = df_today_15m.iloc[0]
+
+    o = round(float(first["Open"]), 2)
+    h = round(float(first["High"]), 2)
+    l = round(float(first["Low"]), 2)
+    c = round(float(first["Close"]), 2)
+
+    range_pts = round(h - l, 2)
+    body_pts = round(abs(c - o), 2)
+
+    # Candle colour
+    if body_pts <= range_pts * 0.25:
+        candle_color = "NEUTRAL"
+        candle_type = "DOJI"
+    elif body_pts >= range_pts * 0.70:
+        candle_type = "MARUBOZU"
+        candle_color = "GREEN" if c > o else "RED"
+    else:
+        candle_type = "BODY"
+        candle_color = "GREEN" if c > o else "RED"
+
+    # Gap
+    gap_pts = round(o - prev_close, 2)
+    if abs(gap_pts) < 0.25:
+        gap_dir = "FLAT"
+    elif gap_pts > 0:
+        gap_dir = "UP"
+    else:
+        gap_dir = "DOWN"
+
+    return {
+        "gap": {
+            "direction": gap_dir,
+            "points": gap_pts,
+            "frozen_at": "09:20 IST"
+        },
+        "opening_candle": {
+            "type": candle_type,
+            "color": candle_color,
+            "size": body_pts,
+            "ohlc": {
+                "open": o,
+                "high": h,
+                "low": l,
+                "close": c
+            },
+            "range": range_pts,
+            "frozen_at": "09:35 IST"
+        }
+    }
 
 # -----------------------------
 # MAIN
@@ -51,37 +105,25 @@ def main():
     ticker = yf.Ticker("^NSEI")
     df15 = ticker.history(interval="15m", period="2d").tz_convert(IST)
 
-    # Keep only today's candles
     df_today = df15[df15.index.date == now.date()]
     if len(df_today) < 5:
         return
 
-    # Previous day close
     prev_day_close = round(
         float(df15[df15.index.date < now.date()].iloc[-1]["Close"]), 2
     )
 
-    last_completed_candle_time = df_today.index[-1]
-
-    # -----------------------------
     # ATR
-    # -----------------------------
     atr_value = calculate_atr_15m(df_today)
     atr_sample_status = (
         "Enough Sample" if len(df_today) >= ATR_PERIOD + 1 else "Less Sample"
     )
 
-    # -----------------------------
     # VWAP
-    # -----------------------------
     vwap_value = calculate_vwap_15m(df_today)
-
     last_close = float(df_today.iloc[-1]["Close"])
-    expansion = round(
-        float(df_today.iloc[-1]["High"] - df_today.iloc[-1]["Low"]), 1
-    )
+    expansion = round(float(df_today.iloc[-1]["High"] - df_today.iloc[-1]["Low"]), 1)
 
-    # VWAP position logic (relative, NOT heuristic)
     distance = last_close - vwap_value
     threshold = expansion * 0.15
 
@@ -92,92 +134,38 @@ def main():
     else:
         vwap_position = "BELOW"
 
-    basis_time = last_completed_candle_time.strftime("%H:%M")
+    basis_time = df_today.index[-1].strftime("%H:%M")
 
-    # -----------------------------
-    # CHOPPINESS (Phase‑1 message)
-    # -----------------------------
+    # Choppiness
     if atr_sample_status == "Less Sample":
         choppiness = {
             "state": "Not Classified",
-            "message": "Insufficient Volatility Sample",
+            "message": "Insufficient Volatility Sample"
         }
     else:
         if atr_value <= 18:
             choppiness = {
                 "state": "High",
-                "message": "Rotational / Mean‑Reversion Likely",
+                "message": "Rotational / Mean‑Reversion Likely"
             }
         elif atr_value <= 25:
             choppiness = {
                 "state": "Moderate",
-                "message": "Expansion Needs Confirmation",
+                "message": "Expansion Needs Confirmation"
             }
         else:
             choppiness = {
                 "state": "Low",
-                "message": "Continuation‑Friendly Environment",
+                "message": "Continuation‑Friendly Environment"
             }
 
-    # -----------------------------
-    # OUTPUT JSON
-    # -----------------------------
+    market_open_block = calculate_market_open(df_today, prev_day_close)
+
     output = {
         "meta": {
             "date": now.strftime("%Y-%m-%d"),
             "last_updated": now.strftime("%H:%M:%S"),
-            "timezone": "IST",
+            "timezone": "IST"
         },
         "nifty": {
             "spot": round(last_close, 2),
-            "change_points": round(last_close - prev_day_close, 1),
-            "change_percent": round(
-                ((last_close - prev_day_close) / prev_day_close) * 100, 2
-            ),
-        },
-        "volatility": {
-            "atr": atr_value,
-            "sample_status": atr_sample_status,
-            "reliable_from": ATR_RELIABLE_FROM,
-        },
-        "choppiness": choppiness,
-        "vwap": {
-            "value": vwap_value,
-            "position": vwap_position,
-            "expansion_range": expansion,
-            "midline": "RISING",
-            "basis_candle_close": basis_time,
-        },
-        "market_open": None,
-        "trend_architect": {
-            "gap_behavior": "CLOSED_BY_1105",
-            "major_candle": {
-                "size": 32.45,
-                "type": "MARUBOZU",
-                "direction": "UP",
-                "time": "09:35",
-            },
-            "next_candle_relation": "OPPOSING",
-            "effective_time": "11:00 AM",
-        },
-        "previous_day": {
-            "pdh": 24203.25,
-            "pdl": 24177.80,
-            "pdc": 24188.40,
-        },
-        "institutional_flows": {
-            "fii_today": None,
-            "dii_today": None,
-            "fii_last_4_days": [None, None, None, None],
-            "dii_last_4_days": [None, None, None, None],
-        },
-    }
-
-    with open("snapshots/market_phase1.json", "w") as f:
-        json.dump(output, f, indent=2)
-
-# -----------------------------
-# ENTRY
-# -----------------------------
-if __name__ == "__main__":
-    main()
