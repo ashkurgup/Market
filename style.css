@@ -1,13 +1,11 @@
-/* ========== RESET / BASE ========== */
-* {
-  box-sizing: border-box;
-}
+/* ===== BASE ===== */
+* { box-sizing: border-box; }
 
 body {
   font-family: Inter, system-ui, sans-serif;
   background: #f8fafc;
   margin: 0;
-  padding: 16px;              /* reduced */
+  padding: 16px;
   color: #111827;
 }
 
@@ -16,76 +14,74 @@ body {
   margin: auto;
 }
 
-/* ========== GRID LAYOUT ========== */
+/* ===== GRID ===== */
 .grid {
   display: grid;
-  gap: 10px;                  /* reduced gap */
-  margin-bottom: 10px;        /* reduced spacing between rows */
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-1 { grid-template-columns: 1fr; }
 
-/* ========== CARD BASE ========== */
+/* ===== CARD ===== */
 .card {
   background: #ffffff;
   border-radius: 10px;
-  padding: 10px 12px;         /* tighter padding */
+  padding: 10px 12px;
   border: 1.5px solid #e5e7eb;
 }
 
-/* ========== SEMANTIC BORDERS ========== */
-.card.trend { border-color: #22c55e; }
-.card.open { border-color: #facc15; }
+/* Semantic borders */
 .card.nifty { border-color: #3b82f6; }
-.card.institutional { border-color: #fb923c; }
+.card.volatility { border-color: #e5e7eb; }
+.card.vwap { border-color: #e5e7eb; }
 .card.anchors { border-color: #9ca3af; }
+.card.open { border-color: #facc15; }
+.card.trend { border-color: #22c55e; }
+.card.institutional { border-color: #fb923c; }
 
-/* ========== TYPOGRAPHY (COMPACT) ========== */
+/* ===== TEXT ===== */
 h2 {
-  font-size: 13px;            /* reduced */
+  font-size: 12.5px;
   font-weight: 600;
-  margin: 0 0 6px 0;          /* tighter */
+  margin: 0 0 6px 0;
 }
 
-/* Main NIFTY value */
 .value {
-  font-size: 28px;            /* reduced but still dominant */
+  font-size: 26px;
   font-weight: 700;
 }
 
-/* Lines */
 .line {
-  font-size: 13px;            /* slightly smaller */
+  font-size: 13px;
   margin-top: 3px;
-  line-height: 1.35;          /* tighter vertical rhythm */
+  line-height: 1.35;
 }
 
-.line.tight {
-  margin-top: 1px;
-}
+.line.tight { margin-top: 1px; }
 
-/* Small text */
 .small {
   font-size: 11px;
   color: #6b7280;
   margin-top: 4px;
 }
 
-/* ========== NUMBER SEMANTICS ========== */
-.green {
-  color: #15803d;
-  font-weight: 700;
-}
-
-.red {
-  color: #b91c1c;
-  font-weight: 700;
-}
+.green { color: #15803d; font-weight: 700; }
+.red { color: #b91c1c; font-weight: 700; }
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
 }
-``
+
+/* ===== PHASE SEPARATOR ===== */
+.phase-divider {
+  margin: 20px 0;
+  border-top: 2px double #9ca3af;
+  text-align: center;
+  padding-top: 6px;
+  font-size: 12px;
+  color: #374151;
+  font-weight: 500;
+}
