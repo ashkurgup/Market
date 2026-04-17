@@ -101,31 +101,45 @@ def trend_architect(df_5, anchors):
     if window.empty:
         return None
 
-    window["body"] = abs(window["Close"] - window["Open"])
-    impulse = window.loc[window["body"].idxmax()]
+    # Body size
+    window["body"] = (window["Close"] - window["Open"]).abs()
 
-    idx = window.index.get_loc(impulse.name)
+    # Impulse candle index (POSitional, not label-based)
+    impulse_pos = window["body"].values.argmax()
+    impulse_row = window.iloc[impulse_pos]
+
+    impulse_open = float(impulse_row["Open"])
+    impulse_close = float(impulse_row["Close"])
+    impulse_body = abs(impulse_close - impulse_open)
+    impulse_time = impulse_row.name.strftime("%H:%M")
+
+    # Next candle relation
     relation = "NA"
+    if impulse_pos + 1 < len(window):
+        nxt = window.iloc[impulse_pos + 1]
 
-    if idx + 1 < len(window):
-        nxt = window.iloc[idx + 1]
-        relation = (
-            "SUPPORTING"
-            if np.sign(nxt["Close"] - nxt["Open"]) == np.sign(impulse["Close"] - impulse["Open"])
-            else "OPPOSING"
-        )
+        nxt_dir = float(nxt["Close"]) - float(nxt["Open"])
+        imp_dir = impulse_close - impulse_open
 
+        if np.sign(nxt_dir) == np.sign(imp_dir):
+            relation = "SUPPORTING"
+        else:
+            relation = "OPPOSING"
+
+    # Gap behavior (safe any())
     lows = df_5.between_time("09:30", "11:05")["Low"].astype(float).values
-    gap_closed = bool(np.any(lows <= anchors["pdc"]))
+    gap_closed = bool(np.any(lows <= float(anchors["pdc"])))
 
     return {
         "gap_behavior": "CLOSED_BY_1105" if gap_closed else "NOT_CLOSED_BY_1105",
         "major_candle": {
-            "size": round(float(abs(impulse["Close"] - impulse["Open"])), 1),
-            "time": impulse.name.strftime("%H:%M")
+            "size": round(impulse_body, 2),
+            "type": "MARUBOZU",
+            "time": impulse_time
         },
         "next_candle_relation": relation,
-        "market_character": "Measured discovery with acceptance"
+        "market_character": "Measured discovery with acceptance",
+        "effective_time": "11:00 AM"
     }
 
 # -------------------------
