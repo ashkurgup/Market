@@ -87,19 +87,37 @@
     /* =========================
        MARKET OPEN (FROZEN)
     ========================= */
-    render(
-      "box-open",
-      "open",
-      `
-      <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
-      <div class="line"><b>Gap:</b> — (—)</div>
-      <div class="small">Frozen at —</div>
-      <div class="line"><b>Opening Candle:</b> —</div>
-      <div class="line">O — | H —</div>
-      <div class="line">L — | C —</div>
-      <div class="line">Range —</div>
-    `
-    );
+    const mo = d.market_open;
+render(
+  "box-open",
+  "open",
+  `
+  <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
+  <div class="line"><b>Gap:</b> ${mo.gap.direction} (${mo.gap.points})</div>
+  <div class="small">Frozen at ${mo.gap.frozen_at}</div>
+
+  <div class="line">
+    <b>Opening Candle:</b>
+    <span class="
+      ${mo.opening_candle.color === "GREEN" ? "green" :
+        mo.opening_candle.color === "RED" ? "red" : "bold"}
+    ">
+      ${mo.opening_candle.type}
+    </span>
+    (${mo.opening_candle.size} pts)
+  </div>
+
+  <div class="line">
+    O ${mo.opening_candle.ohlc.open}
+    | H ${mo.opening_candle.ohlc.high}
+  </div>
+  <div class="line">
+    L ${mo.opening_candle.ohlc.low}
+    | C ${mo.opening_candle.ohlc.close}
+  </div>
+  <div class="line">Range ${mo.opening_candle.range}</div>
+`
+);
 
     /* =========================
        TREND ARCHITECT
