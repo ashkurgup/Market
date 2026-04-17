@@ -4,11 +4,14 @@ fetch("snapshots/market_phase1.json")
 
     /* BOX 1 — NIFTY */
     const live = d.meta?.session_status === "OPEN" ? "LIVE" : "CLOSED";
+    const changeClass = d.nifty?.change_points >= 0 ? "green" : "red";
+
     document.getElementById("box-nifty").innerHTML = `
       <h2>NIFTY <span class="small">● ${live}</span></h2>
-      <div class="value">${d.nifty?.spot ?? "—"}</div>
-      <div class="line ${d.nifty?.change_points >= 0 ? 'green' : 'red'}">
-        ${d.nifty?.change_points ?? "—"} (${d.nifty?.change_percent ?? "—"}%)
+      <div class="value">${Number(d.nifty?.spot ?? 0).toFixed(2)}</div>
+      <div class="line ${changeClass}">
+        ${Number(d.nifty?.change_points ?? 0).toFixed(1)}
+        (${Number(d.nifty?.change_percent ?? 0).toFixed(2)}%)
       </div>
       <div class="small">Updated: ${d.meta?.last_updated ?? "--"} IST</div>
     `;
@@ -16,7 +19,7 @@ fetch("snapshots/market_phase1.json")
     /* BOX 2 — VOLATILITY */
     document.getElementById("box-volatility").innerHTML = `
       <h2>VOLATILITY (ATR)</h2>
-      <div class="value">${d.volatility?.atr ?? "—"}</div>
+      <div class="value">${d.volatility?.atr ? Number(d.volatility.atr).toFixed(1) : "—"}</div>
       <div class="small">Higher ATR favors continuation over chop</div>
     `;
 
@@ -29,7 +32,7 @@ fetch("snapshots/market_phase1.json")
       <div class="small">15‑min candle basis</div>
     `;
 
-    /* BOX 4 — MARKET OPEN */
+    /* BOX 4 — MARKET OPEN (FROZEN) */
     const mo = d.market_open;
     document.getElementById("box-open").innerHTML = `
       <h2>MARKET OPEN <span class="small">FROZEN</span></h2>
@@ -62,12 +65,12 @@ fetch("snapshots/market_phase1.json")
       <div class="small">Effective from ${ta?.effective_time ?? "--"}</div>
     `;
 
-    /* BOX 6 — PDH / PDL / PDC (LOCKED) */
+    /* BOX 6 — PREVIOUS DAY ANCHORS (LOCKED) */
     document.getElementById("box-pdh").innerHTML = `
       <h2>PREVIOUS DAY ANCHORS</h2>
-      <div class="line mono">PDH: ${d.previous_day?.pdh ?? "—"}</div>
-      <div class="line mono">PDL: ${d.previous_day?.pdl ?? "—"}</div>
-      <div class="line mono">PDC: ${d.previous_day?.pdc ?? "—"}</div>
+      <div class="line mono">PDH: ${d.previous_day?.pdh ? Number(d.previous_day.pdh).toFixed(2) : "—"}</div>
+      <div class="line mono">PDL: ${d.previous_day?.pdl ? Number(d.previous_day.pdl).toFixed(2) : "—"}</div>
+      <div class="line mono">PDC: ${d.previous_day?.pdc ? Number(d.previous_day.pdc).toFixed(2) : "—"}</div>
     `;
 
     /* BOX 7 — INSTITUTIONAL FLOWS (LOCKED FORMAT) */
@@ -83,6 +86,7 @@ fetch("snapshots/market_phase1.json")
     `;
   })
   .catch(err => {
-    document.body.innerHTML = "<h2 style='color:red'>Failed to load market data</h2>";
+    document.body.innerHTML =
+      "<h2 style='color:#b91c1c'>Failed to load market data</h2>";
     console.error(err);
   });
