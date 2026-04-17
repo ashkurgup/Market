@@ -41,35 +41,75 @@ fetch("snapshots/market_phase1.json")
       <div class="small">15‑min candle basis</div>
     `;
 
-    /* ---------- BOX 4 : MARKET OPEN ---------- */
-    const mo = d.market_open ?? {};
-    document.getElementById("box-open").innerHTML = `
-      <h2>MARKET OPEN <span class="small">FROZEN</span></h2>
-      <div class="line"><b>Gap:</b> ${mo.gap_status?.type ?? "—"} (${mo.gap_status?.points ?? "—"})</div>
-      <div class="small">Frozen at ${mo.gap_status?.frozen_at ?? "--"}</div>
+    /* ---------- MARKET OPEN (EXPLICIT PLACEHOLDERS) ---------- */
+document.getElementById("box-open").innerHTML = `
+  <h2>MARKET OPEN <span class="small">FROZEN</span></h2>
 
-      <div class="line"><b>Opening Candle:</b> ${mo.opening_candle?.type ?? "—"}</div>
-      <div class="line mono">
-        O ${mo.opening_candle?.ohlc?.open ?? "—"} |
-        H ${mo.opening_candle?.ohlc?.high ?? "—"}<br>
-        L ${mo.opening_candle?.ohlc?.low ?? "—"} |
-        C ${mo.opening_candle?.ohlc?.close ?? "—"}
-      </div>
-      <div class="small">Range ${mo.opening_candle?.range ?? "—"}</div>
-    `;
+  <div class="line"><b>Gap:</b> — (—)</div>
+  <div class="small">Frozen at --</div>
 
-    /* ---------- BOX 5 : TREND ARCHITECT ---------- */
-    const ta = d.trend_architect ?? {};
-    document.getElementById("box-trend").innerHTML = `
-      <h2>TREND ARCHITECT <span class="small">FINAL</span></h2>
-      <div class="line"><b>Gap Behavior:</b> ${ta.gap_behavior ?? "—"}</div>
-      <div class="line"><b>Major Candle:</b> ${ta.major_candle?.size ?? "—"} pts | ${ta.major_candle?.type ?? "—"}</div>
-      <div class="small">Time ${ta.major_candle?.time ?? "--"}</div>
-      <div class="line"><b>Next Candle:</b> ${ta.next_candle_relation ?? "—"}</div>
-      <div class="line"><b>50‑pt Travel:</b> ${ta.travel ?? "—"}</div>
-      <div class="line"><b>Choppiness:</b> ${ta.choppiness ?? "—"}</div>
-      <div class="small">Effective from ${ta.effective_time ?? "--"}</div>
-    `;
+  <div class="line"><b>Opening Candle:</b> —</div>
+
+  <div class="line mono">
+    O — | H —<br>
+    L — | C —
+  </div>
+
+  <div class="line">Range —</div>
+`;
+    
+    /* ---------- TREND ARCHITECT (FINAL POLISHED) ---------- */
+const ta = d.trend_architect ?? {};
+
+/* Gap text humanized */
+const gapText =
+  ta.gap_behavior === "CLOSED_BY_1105"
+    ? "Closed by 11:05 AM"
+    : ta.gap_behavior ?? "—";
+
+/* Candle direction coloring */
+const candleClass =
+  ta.major_candle?.direction === "UP"
+    ? "candle-up"
+    : ta.major_candle?.direction === "DOWN"
+    ? "candle-down"
+    : "";
+
+/* Next candle relation coloring */
+const relationClass =
+  ta.next_candle_relation === "OPPOSING"
+    ? "relation-opposing"
+    : ta.next_candle_relation === "SUPPORTING"
+    ? "relation-supporting"
+    : "";
+
+document.getElementById("box-trend").innerHTML = `
+  <h2>TREND ARCHITECT <span class="small">FINAL</span></h2>
+
+  <div class="line"><b>Gap Behavior:</b> ${gapText}</div>
+
+  <div class="line">
+    <b>Major Candle:</b>
+    ${ta.major_candle?.size ?? "—"} pts |
+    <span class="${candleClass}">
+      ${ta.major_candle?.type ?? "—"}
+    </span>
+    ${ta.major_candle?.time ? `(Formed: ${ta.major_candle.time})` : ""}
+  </div>
+
+  <div class="line">
+    <b>Next Candle:</b>
+    <span class="${relationClass}">
+      ${ta.next_candle_relation ?? "—"}
+    </span>
+  </div>
+
+  <div class="line"><b>50‑pt Travel:</b> —</div>
+  <div class="line"><b>Choppiness:</b> —</div>
+
+  <div class="small">Effective from 11:00 AM</div>
+`;
+
 
     /* ---------- BOX 6 : PDH / PDL / PDC ---------- */
     document.getElementById("box-pdh").innerHTML = `
