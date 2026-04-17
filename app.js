@@ -5,58 +5,64 @@
     });
 
     if (!response.ok) {
-      throw new Error("JSON not found (404)");
+      throw new Error("JSON fetch failed");
     }
 
     const d = await response.json();
 
-    // ===== NIFTY =====
+    // ========== NIFTY ==========
     document.getElementById("box-nifty").innerHTML = `
       <h3>NIFTY</h3>
-      <div>${d.nifty.spot.toFixed(2)}</div>
+      <div>${Number(d.nifty.spot).toFixed(2)}</div>
       <div>${d.nifty.change_points} (${d.nifty.change_percent}%)</div>
       <small>${d.meta.last_updated} IST</small>
     `;
 
-    // ===== ATR =====
+    // ========== ATR ==========
     document.getElementById("box-volatility").innerHTML = `
       <h3>Volatility (ATR)</h3>
-      <div>${d.volatility.atr}</div>
+      <div>${d.volatility?.atr ?? "—"}</div>
       <small>Higher ATR favors continuation over chop</small>
     `;
 
-    // ===== VWAP =====
+    // ========== VWAP ==========
     document.getElementById("box-vwap").innerHTML = `
       <h3>VWAP</h3>
-      <div>Position: ${d.vwap.position}</div>
-      <div>Expansion: ${d.vwap.expansion_range}</div>
-      <div>Midline: ${d.vwap.midline}</div>
+      <div>Position: ${d.vwap?.position ?? "—"}</div>
+      <div>Expansion: ${d.vwap?.expansion_range ?? "—"}</div>
+      <div>Midline: ${d.vwap?.midline ?? "—"}</div>
     `;
 
-    // ===== PREVIOUS DAY =====
+    // ========== PREVIOUS DAY ==========
     document.getElementById("box-anchors").innerHTML = `
       <h3>Previous Day</h3>
-      <div>PDH: ${d.previous_day.pdh}</div>
-      <div>PDL: ${d.previous_day.pdl}</div>
-      <div>PDC: ${d.previous_day.pdc}</div>
+      <div>PDH: ${d.previous_day?.pdh ?? "—"}</div>
+      <div>PDL: ${d.previous_day?.pdl ?? "—"}</div>
+      <div>PDC: ${d.previous_day?.pdc ?? "—"}</div>
     `;
 
-    // ===== MARKET OPEN =====
-    const mo = d.market_open;
-    document.getElementById("box-open").innerHTML = `
-      <h3>Market Open (Frozen)</h3>
-      <div>Gap: ${mo.gap.direction} (${mo.gap.points})</div>
-      <div>Opening Candle: ${mo.opening_candle.type}</div>
-    `;
+    // ========== MARKET OPEN (SAFE) ==========
+    if (d.market_open && d.market_open.gap) {
+      document.getElementById("box-open").innerHTML = `
+        <h3>Market Open (Frozen)</h3>
+        <div>Gap: ${d.market_open.gap.direction} (${d.market_open.gap.points})</div>
+        <div>Opening Candle: ${d.market_open.opening_candle?.type ?? "—"}</div>
+      `;
+    } else {
+      document.getElementById("box-open").innerHTML = `
+        <h3>Market Open (Frozen)</h3>
+        <div>—</div>
+      `;
+    }
 
-    // ===== TREND =====
+    // ========== TREND ARCHITECT ==========
     document.getElementById("box-trend").innerHTML = `
       <h3>Trend Architect</h3>
-      <div>Major Candle: ${d.trend_architect.major_candle.type}</div>
-      <div>Next Candle: ${d.trend_architect.next_candle_relation}</div>
+      <div>Major Candle: ${d.trend_architect?.major_candle?.type ?? "—"}</div>
+      <div>Next Candle: ${d.trend_architect?.next_candle_relation ?? "—"}</div>
     `;
 
-    // ===== FLOWS =====
+    // ========== FLOWS ==========
     document.getElementById("box-flows").innerHTML = `
       <h3>Institutional Flows</h3>
       <div>FII (Today): —</div>
@@ -66,7 +72,7 @@
     `;
 
   } catch (err) {
-    console.error(err);
+    console.error("APP ERROR:", err);
     document.body.innerHTML =
       "<h2 style='color:red'>Failed to load market data</h2>";
   }
