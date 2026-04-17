@@ -1,71 +1,36 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "14:23:10",
+    "last_updated": "14:39:20",
     "timezone": "IST"
   },
   "nifty": {
-    "spot": 24318.6,
-    "change_points": 130.2,
-    "change_percent": 0.54
+    "spot": 24325.65,
+    "change_points": 60.6,
+    "change_percent": 0.0
   },
   "volatility": {
-    "atr": 25.8
+    "atr": 24.8
   },
   "vwap": {
     "position": "NEAR",
-    "expansion_range": 19.9,
+    "expansion_range": 21.8,
     "midline": "RISING"
   },
-  "market_open": {
-    "gap": {
-      "direction": "DOWN",
-      "points": -14.8,
-      "frozen_at": "09:20 AM"
-    },
-    "opening_candle": {
-      "type": "BODY",
-      "ohlc": {
-        "open": 24173.6,
-        "high": 24234.15,
-        "low": 24109.45,
-        "close": 24233.35
-      },
-      "range": 124.7,
-      "frozen_at": "09:35 AM"
-    }
-  },
+  "market_open": null,
   "trend_architect": {
     "gap_behavior": "CLOSED_BY_1105",
     "major_candle": {
-      "size": 32.45,
-      "type": "MARUBOZU",
-      "direction": "UP",
-      "time": "09:35"
+      "type": "MARUBOZU"
     },
-    "next_candle_relation": "OPPOSING",
-    "market_character": "Measured discovery with acceptance",
-    "effective_time": "11:00 AM"
+    "next_candle_relation": "OPPOSING"
   },
   "previous_day": {
-    "pdh": 24203.75,
+    "pdh": 24203.25,
     "pdl": 24177.8,
     "pdc": 24188.4
   },
   "institutional_flows": {
-    "fii_today": null,
-    "dii_today": null,
-    "fii_last_4_days": [
-      null,
-      null,
-      null,
-      null
-    ],
-    "dii_last_4_days": [
-      null,
-      null,
-      null,
-      null
-    ]
+    "status": "AWAITING"
   }
 }
