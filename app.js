@@ -1,6 +1,6 @@
 (async () => {
   const response = await fetch("./snapshots/market_phase1.json", {
-    cache: "no-store",
+    cache: "no-store"
   });
   const d = await response.json();
 
@@ -12,28 +12,21 @@
   };
 
   /* =========================
-     NIFTY (LOCKED)
+     NIFTY
   ========================= */
-  render(
-    "box-nifty",
-    "nifty",
-    `
+  render("box-nifty", "nifty", `
     <h3>NIFTY <span class="small">• LIVE</span></h3>
     <div class="value">${d.nifty.spot.toFixed(2)}</div>
     <div class="line green">
       ${d.nifty.change_points} (${d.nifty.change_percent}%)
     </div>
     <div class="small">Updated: ${d.meta.last_updated} IST</div>
-    `
-  );
+  `);
 
   /* =========================
-     VOLATILITY / ATR (LOCKED)
+     VOLATILITY (ATR)
   ========================= */
-  render(
-    "box-volatility",
-    "volatility",
-    `
+  render("box-volatility", "volatility", `
     <h3>VOLATILITY (ATR)</h3>
     <div class="value">
       ${d.volatility.atr}
@@ -46,16 +39,12 @@
     <div class="small">
       Reliable from ${d.volatility.reliable_from} IST
     </div>
-    `
-  );
+  `);
 
   /* =========================
      VWAP (LOCKED)
   ========================= */
-  render(
-    "box-vwap",
-    "vwap",
-    `
+  render("box-vwap", "vwap", `
     <h3>VWAP</h3>
     <div class="line"><b>Mid:</b> ${d.vwap.mid}</div>
     <div class="line"><b>Upper:</b> ${d.vwap.upper}</div>
@@ -66,38 +55,28 @@
     <div class="small">
       15‑min candle basis ${d.vwap.basis_candle_close}
     </div>
-    `
-  );
+  `);
 
   /* =========================
-     PREVIOUS DAY ANCHORS (LOCKED)
+     PREVIOUS DAY ANCHORS
   ========================= */
-  render(
-    "box-anchors",
-    "anchors",
-    `
+  render("box-anchors", "anchors", `
     <h3>PREVIOUS DAY ANCHORS</h3>
     <div class="line"><b>PDH:</b> ${d.previous_day.pdh}</div>
     <div class="line"><b>PDL:</b> ${d.previous_day.pdl}</div>
     <div class="line"><b>PDC:</b> ${d.previous_day.pdc}</div>
-    `
-  );
+  `);
 
   /* =========================
-     MARKET OPEN (NOW FINAL & LOCKED)
+     MARKET OPEN (FROZEN)
   ========================= */
   const oc = d.market_open.opening_candle;
   const gap = d.market_open.gap;
 
-  render(
-    "box-open",
-    "open",
-    `
+  render("box-open", "open", `
     <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
 
-    <div class="line">
-      <b>Gap:</b> ${gap.direction} (${gap.points})
-    </div>
+    <div class="line"><b>Gap:</b> ${gap.direction} (${gap.points})</div>
     <div class="small">Frozen at ${gap.frozen_at}</div>
 
     <div class="line">
@@ -116,41 +95,57 @@
     </div>
 
     <div class="line"><b>Range</b> ${oc.range}</div>
-    `
-  );
+  `);
 
   /* =========================
-     TREND ARCHITECT (PHASE‑1 STATIC)
+     TREND ARCHITECT (AUTOMATED)
   ========================= */
-  render(
-    "box-trend",
-    "trend",
-    `
-    <h3>TREND ARCHITECT <span class="small">FINAL</span></h3>
+  const ta = d.trend_architect;
+
+  render("box-trend", "trend", `
+    <h3>TREND ARCHITECT <span class="small">MOST IMPORTANT</span></h3>
+
+    <div class="line">
+      <b>Gap Behavior:</b> ${ta.gap_behavior.status}
+    </div>
+    <div class="small">Frozen at ${ta.gap_behavior.frozen_at}</div>
+
     <div class="line">
       <b>Major Candle:</b>
-      <span class="green bold">MARUBOZU</span>
-      <span class="small">(09:35 AM)</span>
+      ${ta.major_candle.range} pts
+      (<span class="${ta.major_candle.color === "GREEN" ? "green" : "red"}">
+        ${ta.major_candle.type}
+      </span>)
+      @ ${ta.major_candle.time}
     </div>
+
     <div class="line">
       <b>Next Candle:</b>
-      <span class="red bold">OPPOSING</span>
+      <span class="${ta.next_candle.color === "GREEN" ? "green" : "red"}">
+        ${ta.next_candle.relation}
+      </span>
     </div>
-    `
-  );
+
+    <div class="line">
+      <b>Total Distance Travelled (09:30–11:05):</b>
+      <span class="${ta.distance_travelled.direction === "UP" ? "green" : "red"}">
+        ${ta.distance_travelled.points} pts
+      </span>
+      |
+      <b>Overlapping Candles:</b> ${ta.distance_travelled.overlaps}
+    </div>
+
+    <div class="line"><b>Market Character:</b> ${ta.market_character}</div>
+  `);
 
   /* =========================
-     INSTITUTIONAL FLOWS (PLACEHOLDER)
+     INSTITUTIONAL FLOWS (PHASE‑1 PLACEHOLDER)
   ========================= */
-  render(
-    "box-flows",
-    "institutional",
-    `
+  render("box-flows", "institutional", `
     <h3>INSTITUTIONAL FLOWS</h3>
     <div class="line"><b>FII (Today):</b> —</div>
     <div class="line"><b>DII (Today):</b> —</div>
     <div class="line"><b>FII (Last 4 Days):</b> | — | — | — | —</div>
     <div class="line"><b>DII (Last 4 Days):</b> | — | — | — | —</div>
-    `
-  );
+  `);
 })();
