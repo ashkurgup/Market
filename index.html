@@ -2,45 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Market Dashboard — Phase 1</title>
+  <title>NIFTY – Phase 1 Dashboard</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<h1>Market Dashboard — Phase 1</h1>
-<div id="lastUpdated" class="muted"></div>
+<div class="container">
 
-<div class="grid">
-
-  <!-- LEFT COLUMN -->
-  <div class="card">
-    <h2>NIFTY</h2>
-    <div id="niftyValue" class="big"></div>
-
-    <h3>Volatility (ATR)</h3>
-    <div id="atrValue">—</div>
-
-    <h3>VWAP</h3>
-    <div>Position: <b id="vwapPosition">—</b></div>
-    <div>Expansion Range: <span id="vwapRange">—</span></div>
-    <div>Midline: <span id="vwapMid">—</span></div>
+  <!-- ROW 1 -->
+  <div class="row three">
+    <div class="box" id="box-nifty"></div>
+    <div class="box" id="box-volatility"></div>
+    <div class="box" id="box-vwap"></div>
   </div>
 
-  <!-- RIGHT COLUMN -->
-  <div class="card">
-    <h3>Market Open</h3>
-    <div id="gapStatus">Data Awaited</div>
-    <div id="openingCandle">Data Awaited</div>
+  <!-- ROW 2 -->
+  <div class="row two">
+    <div class="box" id="box-open"></div>
+    <div class="box spine" id="box-trend"></div>
+  </div>
 
-    <h3>Trend Architect</h3>
-    <div id="trendBlock">Data Awaited</div>
+  <!-- ROW 3 -->
+  <div class="row one">
+    <div class="box" id="box-pdh"></div>
+  </div>
 
-    <h3>Previous Day Anchors</h3>
-    <div id="anchorsValue">—</div>
-
-    <h3>Institutional Flows</h3>
-    <div id="fiiDiiValue">Awaiting institutional data</div>
+  <div class="row one">
+    <div class="box muted" id="box-flows"></div>
   </div>
 
 </div>
