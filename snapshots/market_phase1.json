@@ -1,7 +1,7 @@
 {
   "meta": {
-    "date": "2026-04-16",
-    "last_updated": "20:57:49",
+    "date": "2026-04-17",
+    "last_updated": "08:48:35",
     "timezone": "IST"
   },
   "nifty": {
@@ -14,24 +14,7 @@
     "expansion_range": 25.4,
     "midline": "RISING"
   },
-  "market_open": {
-    "gap_status": {
-      "type": "GAP UP",
-      "points": 7.6,
-      "frozen_at": "09:20"
-    },
-    "opening_candle": {
-      "type": "BODY",
-      "ohlc": {
-        "open": 24219.5,
-        "high": 24245.0,
-        "low": 24214.599609375,
-        "close": 24230.05078125
-      },
-      "range": 30.4,
-      "frozen_at": "09:35"
-    }
-  },
+  "market_open": null,
   "trend_architect": {
     "gap_behavior": "CLOSED_BY_1105",
     "major_candle": {
@@ -44,9 +27,9 @@
     "effective_time": "11:00 AM"
   },
   "previous_day": {
-    "pdh": 24230.349609375,
-    "pdl": 24206.5,
-    "pdc": 24211.900390625
+    "pdh": 24203.25,
+    "pdl": 24177.80078125,
+    "pdc": 24188.400390625
   },
   "institutional_flows": {
     "status": "AWAITING_INSTITUTIONAL_DATA"
