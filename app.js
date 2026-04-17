@@ -33,13 +33,21 @@ fetch("snapshots/market_phase1.json")
     `;
 
     /* ---------- BOX 3 : VWAP (TIGHT SPACING) ---------- */
-    document.getElementById("box-vwap").innerHTML = `
-      <h2>VWAP</h2>
-      <div class="line tight"><b>Position:</b> ${d.vwap?.position ?? "—"}</div>
-      <div class="line tight"><b>Expansion:</b> ${d.vwap?.expansion_range ?? "—"}</div>
-      <div class="line tight"><b>Midline:</b> ${d.vwap?.midline ?? "—"}</div>
-      <div class="small">15‑min candle basis</div>
-    `;
+    
+const now = new Date();
+const minutes = now.getMinutes();
+const roundedMin = Math.floor(minutes / 15) * 15;
+const timeLabel =
+  `${String(now.getHours()).padStart(2, "0")}:${String(roundedMin).padStart(2, "0")}`;
+
+document.getElementById("box-vwap").innerHTML = `
+  <h2>VWAP</h2>
+  <div class="line tight"><b>Position:</b> ${d.vwap?.position ?? "—"}</div>
+  <div class="line tight"><b>Expansion:</b> ${d.vwap?.expansion_range ?? "—"}</div>
+  <div class="line tight"><b>Midline:</b> ${d.vwap?.midline ?? "—"}</div>
+  <div class="small">15‑min candle basis ${timeLabel} IST</div>
+`;
+
 
     /* ---------- MARKET OPEN (EXPLICIT PLACEHOLDERS) ---------- */
 document.getElementById("box-open").innerHTML = `
@@ -58,50 +66,31 @@ document.getElementById("box-open").innerHTML = `
   <div class="line">Range —</div>
 `;
     
-    /* ---------- TREND ARCHITECT (FINAL POLISHED) ---------- */
+    /* ---------- BOX 5 : TREND ARCHITECT (FINAL) ---------- */
 const ta = d.trend_architect ?? {};
 
-/* Gap text humanized */
-const gapText =
-  ta.gap_behavior === "CLOSED_BY_1105"
-    ? "Closed by 11:05 AM"
-    : ta.gap_behavior ?? "—";
-
-/* Candle direction coloring */
 const candleClass =
   ta.major_candle?.direction === "UP"
     ? "candle-up"
-    : ta.major_candle?.direction === "DOWN"
-    ? "candle-down"
-    : "";
-
-/* Next candle relation coloring */
-const relationClass =
-  ta.next_candle_relation === "OPPOSING"
-    ? "relation-opposing"
-    : ta.next_candle_relation === "SUPPORTING"
-    ? "relation-supporting"
-    : "";
+    : "candle-down";
 
 document.getElementById("box-trend").innerHTML = `
   <h2>TREND ARCHITECT <span class="small">FINAL</span></h2>
 
-  <div class="line"><b>Gap Behavior:</b> ${gapText}</div>
+  <div class="line">
+    <b>Gap Behavior:</b> Closed by 11:05 AM
+  </div>
 
   <div class="line">
     <b>Major Candle:</b>
-    ${ta.major_candle?.size ?? "—"} pts |
-    <span class="${candleClass}">
-      ${ta.major_candle?.type ?? "—"}
-    </span>
-    ${ta.major_candle?.time ? `(Formed: ${ta.major_candle.time})` : ""}
+    32.45 pts |
+    <span class="${candleClass}">MARUBOZU</span>
+    (Formed: 09:35 AM)
   </div>
 
   <div class="line">
     <b>Next Candle:</b>
-    <span class="${relationClass}">
-      ${ta.next_candle_relation ?? "—"}
-    </span>
+    <span class="relation-opposing">OPPOSING</span>
   </div>
 
   <div class="line"><b>50‑pt Travel:</b> —</div>
@@ -112,22 +101,32 @@ document.getElementById("box-trend").innerHTML = `
 
 
     /* ---------- BOX 6 : PDH / PDL / PDC ---------- */
-    document.getElementById("box-pdh").innerHTML = `
-      <h2>PREVIOUS DAY ANCHORS</h2>
-      <div class="line mono">PDH: ${Number(d.previous_day?.pdh ?? 0).toFixed(2)}</div>
-      <div class="line mono">PDL: ${Number(d.previous_day?.pdl ?? 0).toFixed(2)}</div>
-      <div class="line mono">PDC: ${Number(d.previous_day?.pdc ?? 0).toFixed(2)}</div>
-    `;
+document.getElementById("box-pdh").innerHTML = `
+  <h2>PREVIOUS DAY ANCHORS</h2>
+  <div class="line mono"><b>PDH:</b> 24203.25</div>
+  <div class="line mono"><b>PDL:</b> 24177.80</div>
+  <div class="line mono"><b>PDC:</b> 24188.40</div>
+`;
 
     /* ---------- BOX 7 : INSTITUTIONAL FLOWS ---------- */
-    const f = d.institutional_flows ?? {};
-    document.getElementById("box-flows").innerHTML = `
-      <h2>INSTITUTIONAL FLOWS (NSE – Cash)</h2>
-      <div class="line mono">FII (Today): ${f.fii_today ?? "—"}</div>
-      <div class="line mono">DII (Today): ${f.dii_today ?? "—"}</div>
-      <br>
-      <div class="line mono">FII (Last 5 Days): | ${(f.fii_minus ?? ["—","—","—","—"]).join(" | ")}</div>
-      <div class="line mono">DII (Last 5 Days): | ${(f.dii_minus ?? ["—","—","—","—"]).join(" | ")}</div>
-      <div class="small">Published post‑market</div>
-    `;
+    c
+document.getElementById("box-flows").innerHTML = `
+  <h2>INSTITUTIONAL FLOWS (NSE – Cash)</h2>
+
+  <div class="line mono"><b>FII (Today):</b> —</div>
+  <div class="line mono"><b>DII (Today):</b> —</div>
+
+  <br>
+
+  <div class="line mono">
+    <b>FII (Last 4 Days):</b> | — | — | — | —
+  </div>
+
+  <div class="line mono">
+    <b>DII (Last 4 Days):</b> | — | — | — | —
+  </div>
+
+  <div class="small">Published post‑market</div>
+`;
+
   });
