@@ -1,36 +1,98 @@
-/* ===== COMPACT MODE ===== */
-
-.card {
-  padding: 10px;         /* ↓ from 16px */
-  border-radius: 12px;   /* slightly tighter */
+/* ===== Base ===== */
+* {
+  box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  padding: 12px;
+  background: #f8fafc;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+  color: #0f172a;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* ===== Grid ===== */
+.grid {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ===== Cards ===== */
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 2px solid #e5e7eb;
+  padding: 10px 12px;
+}
+
+/* Semantic borders */
+.nifty          { border-color: #3b82f6; }
+.volatility     { border-color: #9ca3af; }
+.vwap           { border-color: #6b7280; }
+.anchors        { border-color: #9ca3af; }
+.open           { border-color: #facc15; }
+.trend          { border-color: #22c55e; }
+.institutional  { border-color: #fb923c; }
+
+/* ===== Typography (COMPACT) ===== */
 h3 {
-  font-size: 13px;       /* ↓ from 14px */
-  margin-bottom: 4px;
+  margin: 0 0 4px 0;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
 .value {
-  font-size: 24px;       /* ↓ from 32px */
+  font-size: 22px;         /* ↓ from 32px */
+  font-weight: 700;
+  line-height: 1.15;
   margin-bottom: 4px;
 }
 
 .line {
-  font-size: 12.5px;     /* ↓ from 14px */
+  font-size: 12px;         /* ↓ from 14px */
   margin-top: 2px;
 }
 
 .small {
-  font-size: 11px;
+  font-size: 10.5px;
+  color: #64748b;
   margin-top: 4px;
 }
 
-.grid {
-  gap: 10px;             /* ↓ vertical spacing */
-  margin-bottom: 10px;
+/* ===== Emphasis ===== */
+.bold {
+  font-weight: 700;
 }
 
+.green {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.red {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+/* ===== Divider ===== */
 .phase-divider {
+  border-top: 2px double #0f172a;
   margin-top: 12px;
   padding-top: 4px;
+  font-size: 11px;
+  text-align: center;
 }
