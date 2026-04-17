@@ -1,36 +1,47 @@
-name: Phase 1 Live Market Update
+name: Run Phase 1 Producer
 
 on:
+  # ✅ Every 5 minutes during market hours (IST-aware logic is in code)
   schedule:
-    - cron: "*/5 3-10 * * 1-5"
+    - cron: "*/5 * * * *"
+
+  # ✅ Allow manual trigger anytime
   workflow_dispatch:
 
 jobs:
-  update-market:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
-          pip install yfinance pandas pytz
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run Phase 1 Producer
-        run: python producer/phase1_producer.py
+        env:
+          TZ: Asia/Kolkata
+        run: |
+          python phase1_producer.py
 
-      - name: Commit and push JSON
+      - name: Commit and push JSON (only if changed)
         run: |
           git config user.name "market-bot"
-          git config user.email "market-bot@github.com"
+          git config user.email "market-bot@users.noreply.github.com"
+
           git add snapshots/market_phase1.json
-          git commit -m "Auto update market snapshot"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          if git diff --cached --quiet; then
+            echo "✅ No changes in market snapshot. Skipping commit."
+          else
+            git commit -m "Update Phase 1 market snapshot"
+            git push
+          fi
