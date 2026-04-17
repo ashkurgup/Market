@@ -34,7 +34,7 @@ jobs:
         env:
           TZ: Asia/Kolkata
         run: |
-          python phase1_producer.py
+          python producer/phase1_producer.py
 
       - name: Commit and push JSON (only if changed)
         run: |
