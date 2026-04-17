@@ -1,17 +1,17 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "12:43:47",
+    "last_updated": "12:58:47",
     "timezone": "IST"
   },
   "nifty": {
-    "spot": 24272.0,
-    "change_points": 83.6,
-    "change_percent": 0.35
+    "spot": 24262.599609375,
+    "change_points": 74.2,
+    "change_percent": 0.31
   },
   "vwap": {
     "position": "NEAR",
-    "expansion_range": 24.8,
+    "expansion_range": 18.0,
     "midline": "RISING"
   },
   "market_open": null,
