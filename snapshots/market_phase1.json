@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "20:16:21",
+    "last_updated": "10:53:15",
     "timezone": "IST"
   },
   "nifty": {
@@ -31,40 +31,19 @@
     "opening_candle": {
       "type": "OTHER",
       "color": "GREEN",
-      "size": 59.75,
-      "body_pct": 48,
-      "range": 124.7,
+      "size": 33.95,
+      "body_pct": 30.0,
+      "range": 113.15,
       "ohlc": {
         "open": 24173.6,
-        "high": 24234.15,
+        "high": 24222.6,
         "low": 24109.45,
-        "close": 24233.35
+        "close": 24207.55
       },
       "frozen_at": "09:35 IST"
     }
   },
-  "trend_architect": {
-    "gap_behavior": {
-      "status": "Closed by 11:05",
-      "frozen_at": "11:05 IST"
-    },
-    "major_candle": {
-      "range": 36.05,
-      "type": "MARUBOZU",
-      "color": "RED",
-      "time": "09:30"
-    },
-    "next_candle": {
-      "relation": "OPPOSING"
-    },
-    "distance_travelled": {
-      "points": 14.35,
-      "direction": "UP",
-      "overlaps": 4,
-      "small_candles": 12
-    },
-    "market_character": "Upward movement with frequent overlap \u2014 be cautious"
-  },
+  "trend_architect": {},
   "previous_day": {
     "pdh": 24370.25,
     "pdl": 24109.45,
