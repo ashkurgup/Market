@@ -31,7 +31,12 @@ function renderLastUpdated(ts) {
 
 function renderTrendArchitect1300(t) {
   const el = document.querySelector("#trend-architect-1300 .content");
-  if (!el || !t) {
+
+  if (!el) return;
+
+  // 🔒 Defensive guard: ensure object with expected fields
+  if (!t || !t.major_candle || !t.distance_travelled) {
+    console.warn("⚠️ Trend Architect data missing or malformed:", t);
     el.innerHTML = "<em>Waiting for Trend Architect snapshot…</em>";
     return;
   }
