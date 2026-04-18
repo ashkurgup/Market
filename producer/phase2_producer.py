@@ -24,7 +24,6 @@ def now_ist():
 
 def fetch_intraday_5m(symbol, days=5):
     df = yf.download(symbol, interval="5m", period=f"{days}d", progress=False)
-
     if df.empty:
         return None
 
@@ -45,14 +44,14 @@ def fetch_intraday_5m(symbol, days=5):
 # ==============================
 
 def compute_trend_architect_1300(day_df, previous):
-    current_time = now_ist().time()
+    now = now_ist().time()
 
-    if current_time > time(13, 0) and "trend_architect_1300" in previous:
+    if now > time(13, 0) and "trend_architect_1300" in previous:
         return previous["trend_architect_1300"]
 
     win = day_df[
         (day_df.index.time >= time(9, 30)) &
-        (day_df.index.time <= min(current_time, time(13, 0)))
+        (day_df.index.time <= min(now, time(13, 0)))
     ]
 
     if len(win) < 6:
@@ -64,18 +63,12 @@ def compute_trend_architect_1300(day_df, previous):
     major = win.loc[win["body"].idxmax()]
     major_color = "GREEN" if major["close"] > major["open"] else "RED"
 
-    overlaps = 0
-    small_c = 0
-
+    overlaps, small_c = 0, 0
     for i in range(1, len(win)):
-        p = win.iloc[i - 1]
-        c = win.iloc[i]
-
-        bp = sorted([p["open"], p["close"]])
-        bc = sorted([c["open"], c["close"]])
+        p, c = win.iloc[i - 1], win.iloc[i]
+        bp, bc = sorted([p["open"], p["close"]]), sorted([c["open"], c["close"]])
         overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
         body = bc[1] - bc[0]
-
         if body > 0 and overlap >= 0.8 * body:
             overlaps += 1
         if (c["high"] - c["low"]) < 25:
@@ -122,33 +115,37 @@ def detect_momentum_events_5m(df):
     avg_range = (recent["high"] - recent["low"]).mean()
     avg_vol = recent["volume"].mean()
 
-    last = recent.iloc[-1]
-    prev = recent.iloc[-2]
-
+    last, prev = recent.iloc[-1], recent.iloc[-2]
     body = abs(last["close"] - last["open"])
     rng = last["high"] - last["low"]
     wick_ratio = 1 - (body / rng if rng > 0 else 1)
+
     ts = last.name.isoformat()
 
     if body >= 1.4 * avg_body and body >= 0.65 * rng:
-        sev = "High"
-        desc = "Strong bullish 5m impulse candle" if last["close"] > last["open"] else "Strong bearish 5m impulse candle"
-        events.append(("Impulse", desc, sev, ts))
+        events.append({
+            "description": "Strong bullish 5m impulse candle" if last["close"] > last["open"]
+                           else "Strong bearish 5m impulse candle",
+            "severity": "High",
+            "timeframe": "5m",
+            "timestamp": ts
+        })
 
     if last["volume"] >= 1.7 * avg_vol and rng >= avg_range:
-        events.append(("VolumeBreakout", "High‑volume breakout detected (5m)", "High", ts))
+        events.append({
+            "description": "High‑volume breakout detected (5m)",
+            "severity": "High",
+            "timeframe": "5m",
+            "timestamp": ts
+        })
 
     if body >= avg_body and wick_ratio >= 0.6:
-        events.append(("Exhaustion", "Momentum exhaustion candle (5m)", "Medium", ts))
-
-    if last["close"] > last["open"] and prev["close"] > prev["open"] and last["close"] > prev["high"]:
-        events.append(("Continuation", "Bullish momentum continuation", "Low", ts))
-
-    if last["close"] < last["open"] and prev["close"] < prev["open"] and last["close"] < prev["low"]:
-        events.append(("Continuation", "Bearish momentum continuation", "Low", ts))
-
-    if rng >= avg_range and wick_ratio >= 0.6:
-        events.append(("FailedBreakout", "Failed breakout – momentum rejection", "High", ts))
+        events.append({
+            "description": "Momentum exhaustion candle (5m)",
+            "severity": "Medium",
+            "timeframe": "5m",
+            "timestamp": ts
+        })
 
     return events
 
@@ -164,18 +161,19 @@ def compute_global_indices_30m():
         "Hang Seng": "^HSI"
     }
 
-    out = []
-    now = now_ist()
+    out, now = [], now_ist()
 
     for name, symbol in indices.items():
         df = fetch_intraday_5m(symbol, days=2)
         if df is None or len(df) < 7:
             continue
 
-        last_ts = df.index[-1]
-        is_open = (now - last_ts).total_seconds() <= 2400  # 40 min
+        pct = round(
+            ((df.iloc[-1]["close"] - df.iloc[-7]["close"]) / df.iloc[-7]["close"]) * 100,
+            2
+        )
 
-        pct = round(((df.iloc[-1]["close"] - df.iloc[-7]["close"]) / df.iloc[-7]["close"]) * 100, 2)
+        is_open = (now - df.index[-1]).total_seconds() <= 2400
 
         out.append({
             "name": name,
@@ -190,7 +188,7 @@ def compute_global_indices_30m():
 # ==============================
 
 def compute_premarket_global_bias(global_indices):
-    WEIGHTS = {
+    weights = {
         "Dow Futures": 0.40,
         "DAX": 0.25,
         "Nikkei": 0.20,
@@ -198,19 +196,11 @@ def compute_premarket_global_bias(global_indices):
     }
 
     raw = 0.0
-
     for g in global_indices:
         pct = g["pct_change_30m"]
+        direction = 1 if pct > 0.20 else -1 if pct < -0.20 else 0
         open_wt = 1.0 if g["is_open"] else 0.5
-
-        if pct > 0.20:
-            direction = 1
-        elif pct < -0.20:
-            direction = -1
-        else:
-            direction = 0
-
-        raw += direction * WEIGHTS.get(g["name"], 0) * open_wt
+        raw += direction * weights[g["name"]] * open_wt
 
     raw = max(-1, min(1, raw))
     return round((raw + 1) * 5)
@@ -225,34 +215,15 @@ def run_phase2():
         with open(SNAPSHOT_PATH, "r") as f:
             previous = json.load(f)
 
-    df_nifty = fetch_intraday_5m(SYMBOL, days=5)
-    if df_nifty is None:
+    df = fetch_intraday_5m(SYMBOL, days=5)
+    if df is None:
         return
 
-    day_groups = df_nifty.groupby(df_nifty.index.date)
-    last_day = sorted(day_groups.keys())[-1]
-    day_df = day_groups[last_day]
+    day = sorted(df.groupby(df.index.date).keys())[-1]
+    day_df = df[df.index.date == day]
 
     trend_architect = compute_trend_architect_1300(day_df, previous)
-
-    raw_events = detect_momentum_events_5m(day_df)
-    prev_events = previous.get("momentum_events", [])
-    now = now_ist()
-
-    if now.time() >= time(8, 40):
-        prev_events = []
-
-    for _, desc, sev, ts in raw_events:
-        if not any(e["timestamp"] == ts and e["description"] == desc for e in prev_events):
-            prev_events.append({
-                "description": desc,
-                "severity": sev,
-                "timeframe": "5m",
-                "timestamp": ts
-            })
-
-    momentum_events = prev_events[-5:]
-
+    momentum_events = detect_momentum_events_5m(day_df)
     global_indices = compute_global_indices_30m()
     premarket_bias = compute_premarket_global_bias(global_indices)
 
@@ -264,7 +235,7 @@ def run_phase2():
         "momentum_events": momentum_events,
         "global_indices": global_indices,
         "premarket_global_bias": premarket_bias,
-        "computed_at": now.isoformat()
+        "computed_at": now_ist().isoformat()
     })
 
     with open(SNAPSHOT_PATH, "w") as f:
