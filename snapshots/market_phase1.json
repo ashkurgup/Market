@@ -74,6 +74,30 @@
     "state": "High",
     "message": "Expect large pullbacks"
   },
-  "institutional_flows": {},
-  "pcr": {}
+  "institutional_flows": {
+  "as_of": "17-Apr-2026",
+  "today": {
+    "fii": 382,
+    "dii": -3427
+  },
+  "history_4d": {
+    "fii": [
+          { "day": "Day-1", "value": 666 },
+      { "day": "Day-2", "value": -1983 },
+      { "day": "Day-3", "value": 672 }
+    ],
+    "dii": [
+            { "day": "Day-1", "value": -569 },
+      { "day": "Day-2", "value": 2432 },
+      { "day": "Day-3", "value": 410 }
+    ]
+  }
+},
+
+"pcr": {
+  "index": "NIFTY",
+  "type": "OI_PCR",
+  "value": 1.05,
+  "as_of": "17-Apr-2026 15:30 IST"
+}
 }
