@@ -52,7 +52,7 @@ def fetch_intraday_5m(days=5):
 def compute_trend_architect_1300(day_df, previous):
     current_time = now_ist().time()
 
-    # Freeze after 13:00
+    # ✅ If frozen value already exists, respect freeze
     if current_time > time(13, 0) and "trend_architect_1300" in previous:
         return previous["trend_architect_1300"]
 
@@ -61,9 +61,11 @@ def compute_trend_architect_1300(day_df, previous):
         (day_df.index.time <= min(current_time, time(13, 0)))
     ]
 
+    # ✅ NEW: allow fallback compute after 13:00
     if len(win) < 6:
-        return None
+        return previous.get("trend_architect_1300")
 
+    # --- SAME LOGIC BELOW (unchanged)
     win = win.copy()
     win["body"] = (win["close"] - win["open"]).abs()
 
@@ -76,6 +78,7 @@ def compute_trend_architect_1300(day_df, previous):
     for i in range(1, len(win)):
         p = win.iloc[i - 1]
         c = win.iloc[i]
+
         bp = sorted([p["open"], p["close"]])
         bc = sorted([c["open"], c["close"]])
         overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
@@ -118,7 +121,7 @@ def compute_trend_architect_1300(day_df, previous):
         "market_character": mc,
         "computed_at": now_ist().isoformat()
     }
-
+    
 # ==============================
 # MAIN
 # ==============================
