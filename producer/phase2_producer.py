@@ -1,34 +1,34 @@
 import json
 import os
 from datetime import datetime, time
-import pytz
 import pandas as pd
+import pytz
 
 IST = pytz.timezone("Asia/Kolkata")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PHASE1_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase1.json")
-PHASE2_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
+DATA_PATH = os.path.join(BASE_DIR, "data", "ohlcv_5m.csv")
+SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
 
-def load_phase1_candles():
-    """
-    Expected Phase‑1 candle format:
-    candles: [
-      { "timestamp": "...", "open": , "high": , "low": , "close": , "volume":  }
-    ]
-    """
-    with open(PHASE1_PATH, "r") as f:
-        phase1 = json.load(f)
+# ------------------------------------------------
+# Load OHLCV data (same source philosophy as Phase‑1)
+# ------------------------------------------------
 
-    df = pd.DataFrame(phase1["candles"])
-    df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_convert(IST)
+def load_ohlcv():
+    df = pd.read_csv(DATA_PATH, parse_dates=["timestamp"])
+    df["timestamp"] = df["timestamp"].dt.tz_localize(IST)
     return df
 
-def compute_previous_week_levels(df):
-    df["week"] = df["timestamp"].dt.to_period("W")
-    today = datetime.now(IST).date()
+# ------------------------------------------------
+# Weekly Levels (previous completed week)
+# ------------------------------------------------
 
-    completed = df[df["timestamp"].dt.date < today]
+def compute_weekly_levels(df):
+    df["week"] = df["timestamp"].dt.to_period("W")
+
+    current_week = datetime.now(IST).date().isocalendar().week
+    completed = df[df["timestamp"].dt.isocalendar().week < current_week]
+
     last_week = completed["week"].max()
     week_df = completed[completed["week"] == last_week]
 
@@ -39,36 +39,41 @@ def compute_previous_week_levels(df):
         "week_end": week_df["timestamp"].max().date().isoformat()
     }
 
+# ------------------------------------------------
+# Session Levels (15m, candle‑close only)
+# ------------------------------------------------
+
 def compute_session_levels(df):
     today = datetime.now(IST).date()
-    session_start = datetime.combine(today, time(9, 15), IST)
-    session_end = datetime.combine(today, time(15, 30), IST)
 
-    session_df = df[
-        (df["timestamp"] >= session_start) &
-        (df["timestamp"] <= session_end)
-    ]
+    start = datetime.combine(today, time(9, 15), IST)
+    end = datetime.combine(today, time(15, 30), IST)
+
+    session_df = df[(df["timestamp"] >= start) & (df["timestamp"] <= end)]
 
     candles_15m = (
         session_df
         .set_index("timestamp")
         .resample("15T", closed="right", label="right")
-        .agg({
-            "high": "max",
-            "low": "min"
-        })
+        .agg({"high": "max", "low": "min"})
         .dropna()
     )
 
     return {
-        "high": float(candles_15m["high"].max()),
-        "low": float(candles_15m["low"].min()),
+        "high": float(candles_15m["high"].max()) if not candles_15m.empty else None,
+        "low": float(candles_15m["low"].min()) if not candles_15m.empty else None,
         "based_on_timeframe": "15m",
         "update_rule": "on_candle_close"
     }
 
+# ------------------------------------------------
+# Main Producer
+# ------------------------------------------------
+
 def run_phase2_producer():
-    df = load_phase1_candles()
+    print(">>> Phase‑2 producer started (real data)")
+
+    df = load_ohlcv()
 
     snapshot = {
         "phase": 2,
@@ -80,11 +85,13 @@ def run_phase2_producer():
             "timezone": "IST"
         },
 
-        "weekly_levels": compute_previous_week_levels(df),
+        "weekly_levels": compute_weekly_levels(df),
+
         "key_levels": {
             "nearest_resistance": None,
             "nearest_support": None
         },
+
         "session_levels": compute_session_levels(df),
 
         "structure_events": [],
@@ -104,8 +111,10 @@ def run_phase2_producer():
         "computed_at": datetime.now(IST).isoformat()
     }
 
-    with open(PHASE2_PATH, "w") as f:
+    with open(SNAPSHOT_PATH, "w") as f:
         json.dump(snapshot, f, indent=2)
+
+    print(">>> Phase‑2 snapshot written successfully")
 
 if __name__ == "__main__":
     run_phase2_producer()
