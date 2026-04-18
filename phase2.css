@@ -38,3 +38,9 @@
   color: #999;
   font-style: italic;
 }
+.last-updated {
+  font-size: 11px;
+  color: #888;
+  margin-left: 12px;
+  font-weight: 400;
+}
