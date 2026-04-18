@@ -13,8 +13,16 @@
     "week_end": "2026-04-17"
   },
   "key_levels": {
-    "nearest_resistance": null,
-    "nearest_support": null
+    "nearest_resistance": {
+      "price": 24400.099609375,
+      "strength": "Strong",
+      "source": "Weekly High"
+    },
+    "nearest_support": {
+      "price": 23556.150390625,
+      "strength": "Strong",
+      "source": "Weekly Low"
+    }
   },
   "session_levels": {
     "high": null,
@@ -33,5 +41,5 @@
     "h4": null,
     "h1": null
   },
-  "computed_at": "2026-04-18T14:21:52.991932+05:30"
+  "computed_at": "2026-04-18T14:48:48.434657+05:30"
 }
