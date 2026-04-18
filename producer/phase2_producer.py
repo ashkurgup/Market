@@ -53,21 +53,29 @@ def fetch_ohlcv():
 # --------------------------------------------------
 
 def compute_weekly_levels(df):
-    df["week"] = df["timestamp"].dt.to_period("W")
+    """
+    NSE week definition:
+    - A trading week ends on Friday 15:30 IST
+    - New week starts immediately after that
+    """
 
-    current_week = datetime.now(IST).isocalendar()[1]
-    completed = df[df["timestamp"].dt.isocalendar().week < current_week]
+    df = df.copy()
+    df["date"] = df["timestamp"].dt.date
+    df["time"] = df["timestamp"].dt.time
 
-    if completed.empty:
-        return {
-            "previous_week_high": None,
-            "previous_week_low": None,
-            "week_start": None,
-            "week_end": None
-        }
+    # Define week_close flag: Friday after 15:30
+    df["is_week_close"] = (
+        (df["timestamp"].dt.weekday == 4) &  # Friday
+        (df["timestamp"].dt.time >= time(15, 30))
+    )
 
-    last_week = completed["week"].max()
-    week_df = completed[completed["week"] == last_week]
+    # Tag each candle with a week_id
+    df["week_id"] = df["is_week_close"].cumsum()
+
+    # The latest week_id is current/ongoing week
+    last_completed_week_id = df["week_id"].max() - 1
+
+    week_df = df[df["week_id"] == last_completed_week_id]
 
     if week_df.empty:
         return {
