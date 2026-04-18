@@ -152,23 +152,26 @@ function renderStructuralBiasFromTA(trend) {
     return;
   }
 
-  let text, color;
+  let label = "Structural Bias:";
+  let value = "";
 
   if (
     trend.market_character.includes("Upward") &&
     trend.market_character.includes("overlap")
   ) {
-    text = "4H 🟢 / 1H 🟢 / 15m ⚪ — Pullback phase";
-    color = "#f0ad4e";
+    value = "4H 🟢 / 1H 🟢 / 15m ⚪ — Pullback phase";
   } else if (trend.market_character.includes("Steady move")) {
-    text = "4H 🟢 / 1H 🟢 / 15m 🟢 — Clean trend";
-    color = "#3cb371";
+    value = "4H 🟢 / 1H 🟢 / 15m 🟢 — Clean trend";
   } else {
-    text = "All ⚪ — Stay contextual only";
-    color = "#999";
+    value = "All ⚪ — Stay contextual only";
   }
 
-  el.innerHTML = `<strong style="color:${color}">${text}</strong>`;
+  el.innerHTML = `
+    <div class="structural-bias-text">
+      <span class="structural-bias-label">${label}</span>
+      <span class="structural-bias-value">${value}</span>
+    </div>
+  `;
 }
 
 /* ================= INIT ================= */
