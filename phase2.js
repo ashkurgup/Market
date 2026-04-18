@@ -154,6 +154,29 @@ function renderTrendArchitect1300(t) {
   `;
 }
 
+/* ================= STRUCTURAL BIAS (PHASE‑2) ================= */
+
+function renderStructuralBiasFromTA(trend) {
+  const el = document.querySelector("#structural-bias .content");
+  if (!el || !trend || !trend.market_character) return;
+
+  let biasText = "";
+  let color = "";
+
+  if (trend.market_character.includes("Upward") && trend.market_character.includes("overlap")) {
+    biasText = "4H 🟢 / 1H 🟢 / 15m ⚪ — Pullback phase";
+    color = "#f0ad4e"; // amber
+  } else if (trend.market_character.includes("Steady move")) {
+    biasText = "4H 🟢 / 1H 🟢 / 15m 🟢 — Clean trend";
+    color = "#3cb371"; // green
+  } else {
+    biasText = "All ⚪ — Stay contextual only";
+    color = "#999";
+  }
+
+  el.innerHTML = `<strong style="color:${color}">${biasText}</strong>`;
+}
+
 /* ================= INIT ================= */
 
 document.addEventListener("DOMContentLoaded", loadPhase2);
