@@ -13,7 +13,7 @@
 <body>
   <div class="container">
 
-    <!-- ===== ROW 1 ===== -->
+    <!-- ===== PHASE‑1 (unchanged) ===== -->
     <div class="grid grid-4">
       <div id="box-nifty"></div>
       <div id="box-volatility"></div>
@@ -21,7 +21,6 @@
       <div id="box-anchors"></div>
     </div>
 
-    <!-- ===== ROW 2 ===== -->
     <div class="grid grid-4">
       <div id="box-open"></div>
       <div id="box-trend"></div>
@@ -38,67 +37,57 @@
 
       <div class="phase-title">
         Phase‑2 · Context & Structural Events (Detection Only)
-        <span id="phase2-last-updated" class="last-updated">
-          Last updated: —
-        </span>
+        <span id="phase2-last-updated" class="last-updated">Last updated: —</span>
       </div>
+
+      <!-- ✅ PRE‑MARKET GLOBAL BIAS (METER) -->
+      <div class="card phase2-card" id="premarket-global-bias"></div>
 
       <div class="phase2-grid">
 
-        <!-- Trend Architect -->
         <div class="card phase2-card" id="trend-architect-1300">
           <h3>
             Trend Architect (13:00 Snapshot)
             <span class="subtle-note">09:30 → 13:00 · Frozen after 13:00</span>
           </h3>
-          <div class="content muted">
-            Waiting for Trend Architect snapshot…
-          </div>
+          <div class="content muted">Waiting for Trend Architect snapshot…</div>
         </div>
 
-        <!-- Key Levels -->
         <div class="card phase2-card" id="key-levels">
           <h3>Key Levels</h3>
           <div class="content muted">No data</div>
         </div>
 
-        <!-- Session Levels -->
         <div class="card phase2-card" id="session-levels">
           <h3>Session High / Low (15m)</h3>
           <div class="content muted">No data</div>
         </div>
 
-        <!-- Structure Events -->
         <div class="card phase2-card" id="structure-events">
           <h3>Structure Events (BoS / ChoCH)</h3>
           <div class="content muted">No events detected</div>
         </div>
 
-        <!-- Momentum Events -->
         <div class="card phase2-card" id="momentum-events">
           <h3>Momentum Events</h3>
           <div class="content muted">No events detected</div>
         </div>
 
-        <!-- Global Indices -->
         <div class="card phase2-card" id="global-indices">
           <h3>Global Indices (30‑min %)</h3>
           <div class="content muted">No data</div>
         </div>
 
-        <!-- Structural Bias -->
-<div class="card phase2-card" id="structural-bias">
-  <h3>Structural Bias</h3>
-  <div class="content muted">
-    Not evaluated
+        <div class="card phase2-card" id="structural-bias">
+          <h3>Structural Bias</h3>
+          <div class="content muted">Not evaluated</div>
+        </div>
+
+      </div>
+    </div>
   </div>
-</div>
 
-  <!-- Phase‑1 JS -->
   <script src="app.js"></script>
-
-  <!-- Phase‑2 JS (VERSIONED – IMPORTANT) -->
-  <script src="phase2.js?v=4"></script>
-
+  <script src="phase2.js?v=FINAL"></script>
 </body>
 </html>
