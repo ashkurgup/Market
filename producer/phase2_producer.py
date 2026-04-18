@@ -1,27 +1,56 @@
 import json
 import os
 from datetime import datetime, time
-import pandas as pd
 import pytz
+import pandas as pd
+import yfinance as yf
+
+# --------------------------------------------------
+# CONFIG
+# --------------------------------------------------
+
+SYMBOL = "^NSEI"          # NIFTY 50
+INTERVAL = "5m"
+LOOKBACK_DAYS = 21        # enough for previous completed week
 
 IST = pytz.timezone("Asia/Kolkata")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(BASE_DIR, "data", "ohlcv_5m.csv")
 SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
 
-# ------------------------------------------------
-# Load OHLCV data (same source philosophy as Phase‑1)
-# ------------------------------------------------
+# --------------------------------------------------
+# FETCH DATA FROM YAHOO
+# --------------------------------------------------
 
-def load_ohlcv():
-    df = pd.read_csv(DATA_PATH, parse_dates=["timestamp"])
-    df["timestamp"] = df["timestamp"].dt.tz_localize(IST)
+def fetch_ohlcv():
+    print(">>> Fetching OHLC from Yahoo Finance")
+
+    df = yf.download(
+        SYMBOL,
+        period=f"{LOOKBACK_DAYS}d",
+        interval=INTERVAL,
+        progress=False
+    )
+
+    if df.empty:
+        raise RuntimeError("Yahoo Finance returned no data")
+
+    df = df.reset_index()
+    df.rename(columns={
+        "Datetime": "timestamp",
+        "Open": "open",
+        "High": "high",
+        "Low": "low",
+        "Close": "close",
+        "Volume": "volume"
+    }, inplace=True)
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_convert(IST)
     return df
 
-# ------------------------------------------------
-# Weekly Levels (previous completed week)
-# ------------------------------------------------
+# --------------------------------------------------
+# WEEKLY LEVELS (PREVIOUS COMPLETED WEEK ONLY)
+# --------------------------------------------------
 
 def compute_weekly_levels(df):
     df["week"] = df["timestamp"].dt.to_period("W")
@@ -55,41 +84,63 @@ def compute_weekly_levels(df):
         "week_end": week_df["timestamp"].max().date().isoformat()
     }
 
-# ------------------------------------------------
-# Session Levels (15m, candle‑close only)
-# ------------------------------------------------
+# --------------------------------------------------
+# SESSION LEVELS (15‑MIN, CLOSE‑BASED)
+# --------------------------------------------------
 
 def compute_session_levels(df):
     today = datetime.now(IST).date()
 
-    start = datetime.combine(today, time(9, 15), IST)
-    end = datetime.combine(today, time(15, 30), IST)
+    session_start = datetime.combine(today, time(9, 15), IST)
+    session_end = datetime.combine(today, time(15, 30), IST)
 
-    session_df = df[(df["timestamp"] >= start) & (df["timestamp"] <= end)]
+    session_df = df[
+        (df["timestamp"] >= session_start) &
+        (df["timestamp"] <= session_end)
+    ]
+
+    if session_df.empty:
+        return {
+            "high": None,
+            "low": None,
+            "based_on_timeframe": "15m",
+            "update_rule": "on_candle_close"
+        }
 
     candles_15m = (
         session_df
         .set_index("timestamp")
         .resample("15T", closed="right", label="right")
-        .agg({"high": "max", "low": "min"})
+        .agg({
+            "high": "max",
+            "low": "min"
+        })
         .dropna()
     )
 
+    if candles_15m.empty:
+        return {
+            "high": None,
+            "low": None,
+            "based_on_timeframe": "15m",
+            "update_rule": "on_candle_close"
+        }
+
     return {
-        "high": float(candles_15m["high"].max()) if not candles_15m.empty else None,
-        "low": float(candles_15m["low"].min()) if not candles_15m.empty else None,
+        "high": float(candles_15m["high"].max()),
+        "low": float(candles_15m["low"].min()),
         "based_on_timeframe": "15m",
         "update_rule": "on_candle_close"
     }
 
-# ------------------------------------------------
-# Main Producer
-# ------------------------------------------------
+# --------------------------------------------------
+# MAIN PRODUCER
+# --------------------------------------------------
 
 def run_phase2_producer():
-    print(">>> Phase‑2 producer started (real data)")
+    print(">>> Phase‑2 producer started (Yahoo Finance)")
 
-    df = load_ohlcv()
+    df = fetch_ohlcv()
 
     snapshot = {
         "phase": 2,
