@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Market Phase‑1 Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="phase2.css" />
 </head>
+
 <body>
   <div class="container">
 
@@ -17,7 +19,7 @@
       <div id="box-anchors"></div>
     </div>
 
-    <!-- ===== ROW 2 (NOW 4 CARDS) ===== -->
+    <!-- ===== ROW 2 ===== -->
     <div class="grid grid-4">
       <div id="box-open"></div>
       <div id="box-trend"></div>
@@ -28,54 +30,63 @@
     <div class="phase-divider">
       Phase‑1 • Context Only • Frozen Logic Preserved
     </div>
-<!-- ================= PHASE 2 ================= -->
-<div id="phase2-container" class="phase-section">
-  <div class="phase-title">
-    Phase‑2 · Context & Structural Events (Detection Only)
-   <span id="phase2-last-updated" class="last-updated">Last updated: —</span>
-</div>
 
-  <div class="phase2-grid">
+    <!-- ================= PHASE 2 ================= -->
+    <div id="phase2-container" class="phase-section">
 
-    <div class="card phase2-card" id="weekly-levels">
-      <h3>Weekly Levels</h3>
-      <div class="content muted">No data</div>
+      <div class="phase-title">
+        Phase‑2 · Context & Structural Events (Detection Only)
+        <span id="phase2-last-updated" class="last-updated">
+          Last updated: —
+        </span>
+      </div>
+
+      <div class="phase2-grid">
+
+        <div class="card phase2-card" id="weekly-levels">
+          <h3>Weekly Levels</h3>
+          <div class="content muted">No data</div>
+        </div>
+
+        <div class="card phase2-card" id="key-levels">
+          <h3>Key Levels</h3>
+          <div class="content muted">No data</div>
+        </div>
+
+        <div class="card phase2-card" id="session-levels">
+          <h3>Session High / Low (15m)</h3>
+          <div class="content muted">No data</div>
+        </div>
+
+        <div class="card phase2-card" id="structure-events">
+          <h3>Structure Events (BoS / ChoCH)</h3>
+          <div class="content muted">No events detected</div>
+        </div>
+
+        <div class="card phase2-card" id="momentum-events">
+          <h3>Momentum Events</h3>
+          <div class="content muted">No events detected</div>
+        </div>
+
+        <div class="card phase2-card" id="global-indices">
+          <h3>Global Indices (30‑min %)</h3>
+          <div class="content muted">No data</div>
+        </div>
+
+        <div class="card phase2-card" id="structural-bias">
+          <h3>Structural Bias</h3>
+          <div class="content muted">Not evaluated</div>
+        </div>
+
+      </div>
     </div>
-
-    <div class="card phase2-card" id="key-levels">
-      <h3>Key Levels</h3>
-      <div class="content muted">No data</div>
-    </div>
-
-    <div class="card phase2-card" id="session-levels">
-      <h3>Session High / Low (15m)</h3>
-      <div class="content muted">No data</div>
-    </div>
-
-    <div class="card phase2-card" id="structure-events">
-      <h3>Structure Events (BoS / ChoCH)</h3>
-      <div class="content muted">No events detected</div>
-    </div>
-
-    <div class="card phase2-card" id="momentum-events">
-      <h3>Momentum Events</h3>
-      <div class="content muted">No events detected</div>
-    </div>
-
-    <div class="card phase2-card" id="global-indices">
-      <h3>Global Indices (30‑min %)</h3>
-      <div class="content muted">No data</div>
-    </div>
-
-    <div class="card phase2-card" id="structural-bias">
-      <h3>Structural Bias</h3>
-      <div class="content muted">Not evaluated</div>
-    </div>
-
   </div>
-</div>
-  </div>
 
+  <!-- Phase‑1 JS -->
   <script src="app.js"></script>
+
+  <!-- Phase‑2 JS (CRITICAL) -->
+  <script src="phase2.js"></script>
+
 </body>
 </html>
