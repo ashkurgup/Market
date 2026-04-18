@@ -44,3 +44,14 @@
   margin-left: 12px;
   font-weight: 400;
 }
+
+.phase2-card .line {
+  font-style: italic;
+  color: #777;
+  margin-bottom: 4px;
+}
+
+.phase2-card strong {
+  font-weight: 600;
+  color: #333;
+}
