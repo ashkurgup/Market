@@ -218,22 +218,35 @@ def detect_5m_structure(df5):
 
 
 def accept_1m(df1, level, direction):
-    closes = df1["close"].to_numpy()
-    times = df1["timestamp"].to_numpy()
+    recent = df1.tail(ACCEPTANCE_1M_CANDLES + 2)
+    closes = recent["close"].to_numpy()
+    times = recent["timestamp"].to_numpy()
 
+    # Displacement rule (current breach only)
     if direction == "up":
-        idx = closes.argmax()
-        if closes[idx] >= level + ACCEPTANCE_POINTS:
-            return True, times[idx], f"1m displacement +{int(closes[idx]-level)} pts"
-        if all(c > level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
-            return True, times[-1], "3x 1m closes"
+        last_close = closes[-1]
+        if last_close >= level + ACCEPTANCE_POINTS:
+            return (
+                True,
+                times[-1],
+                f"1m displacement +{int(last_close - level)} pts"
+            )
 
     if direction == "down":
-        idx = closes.argmin()
-        if closes[idx] <= level - ACCEPTANCE_POINTS:
-            return True, times[idx], f"1m displacement +{int(level-closes[idx])} pts"
-        if all(c < level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
-            return True, times[-1], "3x 1m closes"
+        last_close = closes[-1]
+        if last_close <= level - ACCEPTANCE_POINTS:
+            return (
+                True,
+                times[-1],
+                f"1m displacement +{int(level - last_close)} pts"
+            )
+
+    # Time acceptance rule
+    if direction == "up" and all(c > level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
+        return True, times[-1], "3x 1m closes"
+
+    if direction == "down" and all(c < level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
+        return True, times[-1], "3x 1m closes"
 
     return False, None, None
 
