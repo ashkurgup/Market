@@ -158,52 +158,43 @@ if not previous.get("trend_architect"):
         }
 
 # ============================================================
-# INSTITUTIONAL FLOWS (Moneycontrol) — SAFE FALLBACK
+# INSTITUTIONAL FLOWS (Moneycontrol — JSON, CI‑SAFE)
 # ============================================================
-# NOTE: read_html may require lxml in some environments.
-# We wrap it so Phase‑1 never crashes; if it fails, we keep
-# the last saved Institutional Flows.
-
 try:
-    MC_URL = "https://www.moneycontrol.com/markets/fii-dii-data/cash/"
-    tables = pd.read_html(MC_URL)  # may fail if lxml unavailable
-    # Heuristic: find table with 'Date' and 'FII'/'DII' net columns
-    flow_df = None
-    for t in tables:
-        cols = [c.lower() for c in t.columns.astype(str)]
-        if any("date" in c for c in cols) and any("fii" in c for c in cols) and any("dii" in c for c in cols):
-            flow_df = t.copy()
-            break
+    mc_url = "https://www.moneycontrol.com/mc/widget/fii_dii_data?type=0"
+    mc = requests.get(mc_url, timeout=10).json()
 
-    if flow_df is not None:
-        # Normalize
-        flow_df.columns = [c.lower() for c in flow_df.columns.astype(str)]
-        flow_df = flow_df.dropna()
-        # Assumption: rows already ordered latest first or sort by date if present
-        if "date" in flow_df.columns:
-            flow_df["date"] = pd.to_datetime(flow_df["date"], errors="coerce")
-            flow_df = flow_df.sort_values("date", ascending=False)
+    rows = mc.get("data", [])
+    if rows:
+        # rows are latest-first
+        latest = rows[0]
 
-        top = flow_df.head(4)
-        # Try to detect net columns
-        fii_col = next((c for c in top.columns if "fii" in c and "net" in c), None)
-        dii_col = next((c for c in top.columns if "dii" in c and "net" in c), None)
+        as_of = latest.get("date")
 
-        if fii_col and dii_col:
-            previous["institutional_flows"] = {
-                "as_of": top.iloc[0].get("date", None).strftime("%Y-%m-%d") if "date" in top.columns else None,
-                "today": {
-                    "fii": float(top.iloc[0][fii_col]),
-                    "dii": float(top.iloc[0][dii_col])
-                },
-                "history_4d": {
-                    "fii": [{"day": f"Day-{i+1}", "value": float(v)} for i, v in enumerate(top[fii_col].tolist())],
-                    "dii": [{"day": f"Day-{i+1}", "value": float(v)} for i, v in enumerate(top[dii_col].tolist())]
-                }
+        fii_vals = [float(r.get("fii", 0)) for r in rows[:4]]
+        dii_vals = [float(r.get("dii", 0)) for r in rows[:4]]
+
+        previous["institutional_flows"] = {
+            "as_of": as_of,
+            "today": {
+                "fii": fii_vals[0],
+                "dii": dii_vals[0]
+            },
+            "history_4d": {
+                "fii": [
+                    {"day": f"Day-{i+1}", "value": fii_vals[i]}
+                    for i in range(len(fii_vals))
+                ],
+                "dii": [
+                    {"day": f"Day-{i+1}", "value": dii_vals[i]}
+                    for i in range(len(dii_vals))
+                ]
             }
+        }
 except Exception:
-    # Keep previous institutional_flows untouched
+    # Holiday / endpoint down → keep last snapshot
     pass
+``
 
 # ============================================================
 # PCR (NSE Option Chain JSON) — SAFE FALLBACK
