@@ -26,15 +26,6 @@
     "based_on_timeframe": "15m",
     "update_rule": "on_candle_close"
   },
-  "structure_events": [
-    {
-      "event": "BoS",
-      "direction": "Down",
-      "structure": "LL",
-      "level": 24348.1,
-      "confirmed_by": "1m displacement +241 pts",
-      "timestamp": "2026-04-16 13:24:00+05:30"
-    }
-  ],
-  "computed_at": "2026-04-18T15:58:16.102371+05:30"
+  "structure_events": [],
+  "computed_at": "2026-04-18T16:44:59.392452+05:30"
 }
