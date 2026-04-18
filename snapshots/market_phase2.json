@@ -26,16 +26,15 @@
     "based_on_timeframe": "15m",
     "update_rule": "on_candle_close"
   },
-  "structure_events": [],
-  "momentum_events": [],
-  "global_indices": {
-    "time_window_minutes": 30,
-    "indices": []
-  },
-  "bias": {
-    "day": null,
-    "h4": null,
-    "h1": null
-  },
-  "computed_at": "2026-04-18T15:18:43.501983+05:30"
+  "structure_events": [
+    {
+      "event": "BoS",
+      "direction": "Down",
+      "structure": "LL",
+      "level": 24348.1,
+      "confirmed_by": "1m displacement +241 pts",
+      "timestamp": "2026-04-16 13:24:00+05:30"
+    }
+  ],
+  "computed_at": "2026-04-18T15:44:48.795959+05:30"
 }
