@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "11:24:12",
+    "last_updated": "11:46:57",
     "timezone": "IST"
   },
   "nifty": {
@@ -74,6 +74,6 @@
     "state": "High",
     "message": "Expect large pullbacks"
   },
-  "institutional_flows": null,
-  "pcr": null
+  "institutional_flows": {},
+  "pcr": {}
 }
