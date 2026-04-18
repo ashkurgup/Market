@@ -1,36 +1,29 @@
 {
   "phase": 2,
   "symbol": "NIFTY",
-
   "session": {
     "start": "09:15",
     "end": "15:30",
     "timezone": "IST"
   },
-
   "weekly_levels": {
-    "previous_week_high": null,
-    "previous_week_low": null,
-    "week_start": null,
-    "week_end": null
+    "previous_week_high": 22500,
+    "previous_week_low": 22100,
+    "week_start": "2026-04-06",
+    "week_end": "2026-04-10"
   },
-
   "key_levels": {
     "nearest_resistance": null,
     "nearest_support": null
   },
-
   "session_levels": {
-    "high": null,
-    "low": null,
+    "high": 22480,
+    "low": 22310,
     "based_on_timeframe": "15m",
     "update_rule": "on_candle_close"
   },
-
   "structure_events": [],
-
   "momentum_events": [],
-
   "global_indices": {
     "time_window_minutes": 30,
     "indices": [
@@ -52,12 +45,10 @@
       }
     ]
   },
-
   "bias": {
     "day": null,
     "h4": null,
     "h1": null
   },
-
-  "computed_at": null
+  "computed_at": "2026-04-18T13:46:38.052504+05:30"
 }
