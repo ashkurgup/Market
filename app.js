@@ -122,7 +122,7 @@ render("box-open", "open", `
     <div class="line"><b>Market Character:</b> ${safe(ta.market_character)}</div>
   `);
 
- /* =======================
+/* =======================
    INSTITUTIONAL FLOWS (MANUAL)
 ======================= */
 const flows = d.institutional_flows ?? {};
@@ -130,28 +130,49 @@ const flows = d.institutional_flows ?? {};
 render("box-flows", "institutional manual", `
   <h3>INSTITUTIONAL FLOWS <span class="small">(Manual)</span></h3>
 
-  <div class="line manual">
+  <div class="line">
     <b>As of ${safe(flows.as_of)}:</b>
     FII ${safe(flows.today?.fii)} | DII ${safe(flows.today?.dii)}
   </div>
 
-  <div class="small manual">
+  <div class="small">
     <b>FII (Last 4):</b>
     ${flows.history_4d?.fii?.map(x => x.value).join(" | ") ?? "—"}
   </div>
 
-  <div class="small manual">
+  <div class="small">
     <b>DII (Last 4):</b>
     ${flows.history_4d?.dii?.map(x => x.value).join(" | ") ?? "—"}
   </div>
 `);
 
- /* =======================
-   PCR (MANUAL)
+/* =======================
+   PCR (MANUAL + INTERPRETATION)
 ======================= */
+const pcrVal = d.pcr?.value;
+
+let pcrText = "—";
+if (typeof pcrVal === "number") {
+  if (pcrVal < 0.8) {
+    pcrText = "Bearish options positioning (excess calls writing)";
+  } else if (pcrVal <= 1.1) {
+    pcrText = "Balanced to mildly bullish options positioning";
+  } else {
+    pcrText = "Bullish options positioning (excess puts writing)";
+  }
+}
+
 render("box-pcr", "pcr manual", `
   <h3>PCR (OPTIONS) <span class="small">(Manual)</span></h3>
-  <div class="value manual">${safe(d.pcr?.value)}</div>
-  <div class="small manual">As of ${safe(d.pcr?.as_of)}</div>
+
+  <div class="value">${safe(pcrVal)}</div>
+
+  <div class="small">
+    As of ${safe(d.pcr?.as_of)}
+  </div>
+
+  <div class="line">
+    <b>Interpretation:</b> ${pcrText}
+  </div>
 `);
 })();
