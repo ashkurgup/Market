@@ -52,7 +52,7 @@ def fetch_intraday_5m(days=5):
 def compute_trend_architect_1300(day_df, previous):
     current_time = now_ist().time()
 
-    # Freeze after 13:00 if already computed
+    # Freeze after 13:00
     if current_time > time(13, 0) and "trend_architect_1300" in previous:
         return previous["trend_architect_1300"]
 
@@ -61,7 +61,6 @@ def compute_trend_architect_1300(day_df, previous):
         (day_df.index.time <= min(current_time, time(13, 0)))
     ]
 
-    # fallback if insufficient candles
     if len(win) < 6:
         return previous.get("trend_architect_1300")
 
@@ -77,6 +76,7 @@ def compute_trend_architect_1300(day_df, previous):
     for i in range(1, len(win)):
         p = win.iloc[i - 1]
         c = win.iloc[i]
+
         bp = sorted([p["open"], p["close"]])
         bc = sorted([c["open"], c["close"]])
         overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
@@ -121,7 +121,7 @@ def compute_trend_architect_1300(day_df, previous):
     }
 
 # ==============================
-# MOMENTUM EVENTS (5m)
+# MOMENTUM EVENTS (5m) + SEVERITY
 # ==============================
 
 def detect_momentum_events_5m(df_5m):
@@ -145,35 +145,32 @@ def detect_momentum_events_5m(df_5m):
 
     ts = last.name.isoformat()
 
-    # Strong impulse
+    # HIGH severity
     if body >= 1.4 * avg_body and body >= 0.65 * rng:
         if last["close"] > last["open"]:
-            events.append(("BullishImpulse", "Strong bullish 5m impulse candle", ts))
+            events.append(("BullishImpulse", "Strong bullish 5m impulse candle", "High", ts))
         else:
-            events.append(("BearishImpulse", "Strong bearish 5m impulse candle", ts))
+            events.append(("BearishImpulse", "Strong bearish 5m impulse candle", "High", ts))
 
-    # High volume breakout
     if last["volume"] >= 1.7 * avg_vol and rng >= avg_range:
-        events.append(("HighVolumeBreakout", "High‑volume breakout detected (5m)", ts))
+        events.append(("HighVolumeBreakout", "High‑volume breakout detected (5m)", "High", ts))
 
-    # Exhaustion
+    if rng >= avg_range and wick_ratio >= 0.6:
+        events.append(("FailedBreakout", "Failed breakout – momentum rejection", "High", ts))
+
+    # MEDIUM severity
     if body >= avg_body and wick_ratio >= 0.6:
-        events.append(("Exhaustion", "Momentum exhaustion candle (5m)", ts))
+        events.append(("Exhaustion", "Momentum exhaustion candle (5m)", "Medium", ts))
 
-    # Continuation
+    if rng >= 1.5 * avg_range and abs(prev["close"] - last["close"]) < 0.3 * rng:
+        events.append(("NoFollowThrough", "Expansion without follow‑through", "Medium", ts))
+
+    # LOW severity
     if last["close"] > last["open"] and prev["close"] > prev["open"] and last["close"] > prev["high"]:
-        events.append(("BullishContinuation", "Bullish momentum continuation", ts))
+        events.append(("BullishContinuation", "Bullish momentum continuation", "Low", ts))
 
     if last["close"] < last["open"] and prev["close"] < prev["open"] and last["close"] < prev["low"]:
-        events.append(("BearishContinuation", "Bearish momentum continuation", ts))
-
-    # Failed breakout
-    if rng >= avg_range and wick_ratio >= 0.6:
-        events.append(("FailedBreakout", "Failed breakout – momentum rejection", ts))
-
-    # Expansion without follow‑through
-    if rng >= 1.5 * avg_range and abs(prev["close"] - last["close"]) < 0.3 * rng:
-        events.append(("NoFollowThrough", "Expansion without follow‑through", ts))
+        events.append(("BearishContinuation", "Bearish momentum continuation", "Low", ts))
 
     return events
 
@@ -201,21 +198,23 @@ def run_phase2():
     # Trend Architect
     ta_1300 = compute_trend_architect_1300(day_df, previous)
 
-    # Momentum Events (intraday, reset @ 08:40)
+    # Momentum Events (intraday)
     now = now_ist()
     prev_events = previous.get("momentum_events", [])
 
+    # Reset next day at 08:40 IST
     if now.time() >= time(8, 40):
         prev_events = []
 
     raw_events = detect_momentum_events_5m(day_df)
 
-    for etype, desc, ts in raw_events:
+    for etype, desc, severity, ts in raw_events:
         if not any(e["timestamp"] == ts and e["type"] == etype for e in prev_events):
             prev_events.append({
                 "type": etype,
                 "timeframe": "5m",
                 "description": desc,
+                "severity": severity,
                 "timestamp": ts
             })
 
