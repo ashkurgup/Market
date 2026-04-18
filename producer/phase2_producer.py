@@ -61,7 +61,7 @@ def fetch_ohlc(interval, days):
 
 def compute_weekly_levels(df):
     df = df.copy()
-    df["weekday"] = df["timestamp"].dt.weekday  # Mon=0, Fri=4
+    df["weekday"] = df["timestamp"].dt.weekday
 
     fridays = df[df["weekday"] == 4]
     if fridays.empty:
@@ -141,7 +141,6 @@ def count_respects(df_5m, level, lookback=500):
         next_price = float(recent["close"].iloc[i + 1])
         if abs(price - level) <= 10 and abs(next_price - price) >= 30:
             respects += 1
-
     return respects
 
 
@@ -191,10 +190,7 @@ def compute_support_resistance(price, weekly, df_5m):
         return out
 
     def fmt(levels):
-        return [
-            f'{l["price"]:.2f} (Strong)' if l["strong"] else f'{l["price"]:.2f}'
-            for l in levels
-        ]
+        return [f'{l["price"]:.2f} (Strong)' for l in levels]
 
     return {
         "resistance": fmt(trim([l for l in resistance if l["price"] > price])),
@@ -211,13 +207,13 @@ def detect_5m_structure(df5):
     h, l = df5["high"].to_numpy(), df5["low"].to_numpy()
 
     if h[-3] > h[-4] and h[-3] > h[-2]:
-        return ("HH", h[-3])
+        return ("HH", float(h[-3]))
     if l[-3] < l[-4] and l[-3] < l[-2]:
-        return ("LL", l[-3])
+        return ("LL", float(l[-3]))
     if h[-3] < h[-4] and h[-3] < h[-2]:
-        return ("LH", h[-3])
+        return ("LH", float(h[-3]))
     if l[-3] > l[-4] and l[-3] > l[-2]:
-        return ("HL", l[-3])
+        return ("HL", float(l[-3]))
     return None
 
 
@@ -254,62 +250,49 @@ def detect_bos_choch(df5, df1, key_levels):
     if not any(abs(sprice - lvl) <= 50 for lvl in structural_lvls):
         return events
 
-    def emit_id(evt, dirn):
-        return f"{evt}|{dirn}|{stype}|{int(sprice)}"
+    def eid(e, d): return f"{e}|{d}|{stype}|{int(sprice)}"
+    if (eid("BoS","Up") not in LAST_STRUCTURE_EVENT
+        and stype in ["LH","HH"]):
 
-    def already(evt, dirn):
-        return LAST_STRUCTURE_EVENT.get(emit_id(evt, dirn), False)
-
-    if stype in ["LH", "HH"] and not already("BoS", "Up"):
         ok, ts, why = accept_1m(df1, sprice, "up")
         if ok:
-            LAST_STRUCTURE_EVENT[emit_id("BoS", "Up")] = True
+            LAST_STRUCTURE_EVENT[eid("BoS","Up")] = True
             events.append({
-                "event": "BoS",
-                "direction": "Up",
-                "structure": stype,
-                "level": round(sprice, 2),
-                "confirmed_by": why,
-                "timestamp": str(ts)
+                "event":"BoS","direction":"Up","structure":stype,
+                "level":round(sprice,2),"confirmed_by":why,
+                "timestamp":str(ts)
             })
 
-    if stype in ["HL", "LL"] and not already("BoS", "Down"):
+    if (eid("BoS","Down") not in LAST_STRUCTURE_EVENT
+        and stype in ["HL","LL"]):
+
         ok, ts, why = accept_1m(df1, sprice, "down")
         if ok:
-            LAST_STRUCTURE_EVENT[emit_id("BoS", "Down")] = True
+            LAST_STRUCTURE_EVENT[eid("BoS","Down")] = True
             events.append({
-                "event": "BoS",
-                "direction": "Down",
-                "structure": stype,
-                "level": round(sprice, 2),
-                "confirmed_by": why,
-                "timestamp": str(ts)
+                "event":"BoS","direction":"Down","structure":stype,
+                "level":round(sprice,2),"confirmed_by":why,
+                "timestamp":str(ts)
             })
 
-    if stype == "LH" and not already("ChoCH", "Up"):
+    if (eid("ChoCH","Up") not in LAST_STRUCTURE_EVENT and stype=="LH"):
         ok, ts, why = accept_1m(df1, sprice, "up")
         if ok:
-            LAST_STRUCTURE_EVENT[emit_id("ChoCH", "Up")] = True
+            LAST_STRUCTURE_EVENT[eid("ChoCH","Up")] = True
             events.append({
-                "event": "ChoCH",
-                "direction": "Up",
-                "structure": "LH break",
-                "level": round(sprice, 2),
-                "confirmed_by": why,
-                "timestamp": str(ts)
+                "event":"ChoCH","direction":"Up","structure":"LH break",
+                "level":round(sprice,2),"confirmed_by":why,
+                "timestamp":str(ts)
             })
 
-    if stype == "HL" and not already("ChoCH", "Down"):
+    if (eid("ChoCH","Down") not in LAST_STRUCTURE_EVENT and stype=="HL"):
         ok, ts, why = accept_1m(df1, sprice, "down")
         if ok:
-            LAST_STRUCTURE_EVENT[emit_id("ChoCH", "Down")] = True
+            LAST_STRUCTURE_EVENT[eid("ChoCH","Down")] = True
             events.append({
-                "event": "ChoCH",
-                "direction": "Down",
-                "structure": "HL break",
-                "level": round(sprice, 2),
-                "confirmed_by": why,
-                "timestamp": str(ts)
+                "event":"ChoCH","direction":"Down","structure":"HL break",
+                "level":round(sprice,2),"confirmed_by":why,
+                "timestamp":str(ts)
             })
 
     return events
@@ -321,30 +304,26 @@ def detect_bos_choch(df5, df1, key_levels):
 def run_phase2_producer():
     df5 = fetch_ohlc("5m", 7)
     df1 = fetch_ohlc("1m", 2)
-
-    current_price = float(df5["close"].iloc[-1])
+    price = float(df5["close"].iloc[-1])
 
     weekly = compute_weekly_levels(df5)
     session = compute_session_levels(df5)
-    key_levels = compute_support_resistance(current_price, weekly, df5)
+    key_levels = compute_support_resistance(price, weekly, df5)
     structure_events = detect_bos_choch(df5, df1, key_levels)
 
     snapshot = {
         "phase": 2,
         "symbol": "NIFTY",
-        "session": {"start": "09:15", "end": "15:30", "timezone": "IST"},
+        "session": {"start":"09:15","end":"15:30","timezone":"IST"},
         "weekly_levels": weekly,
         "key_levels": key_levels,
         "session_levels": session,
         "structure_events": structure_events,
-        "momentum_events": [],
-        "global_indices": {"time_window_minutes": 30, "indices": []},
-        "bias": {"day": None, "h4": None, "h1": None},
         "computed_at": datetime.now(IST).isoformat()
     }
 
-    with open(SNAPSHOT_PATH, "w") as f:
-        json.dump(snapshot, f, indent=2)
+    with open(SNAPSHOT_PATH,"w") as f:
+        json.dump(snapshot,f,indent=2)
 
 
 if __name__ == "__main__":
