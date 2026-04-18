@@ -1,1 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Market Phase 2 Schema",
+  "description": "Higher-timeframe and contextual market facts used for interpretation. No execution or prediction.",
 
+  "type": "object",
+  "required": [
+    "phase",
+    "symbol",
+    "weekly_levels",
+    "computed_at"
+  ],
+
+  "properties": {
+    "phase": {
+      "type": "integer",
+      "const": 2,
+      "description": "Phase identifier. Always 2."
+    },
+
+    "symbol": {
+      "type": "string",
+      "description": "Market symbol (e.g., NIFTY, BANKNIFTY)"
+    },
+
+    "weekly_levels": {
+      "type": "object",
+      "required": [
+        "previous_week_high",
+        "previous_week_low",
+        "week_start",
+        "week_end"
+      ],
+      "properties": {
+        "previous_week_high": {
+          "type": "number",
+          "description": "High of the last completed trading week"
+        },
+        "previous_week_low": {
+          "type": "number",
+          "description": "Low of the last completed trading week"
+        },
+        "week_start": {
+          "type": "string",
+          "format": "date",
+          "description": "Start date of the previous completed week (IST)"
+        },
+        "week_end": {
+          "type": "string",
+          "format": "date",
+          "description": "End date of the previous completed week (IST)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "computed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when Phase-2 data was computed"
+    }
+  },
+
+  "additionalProperties": false
+}
