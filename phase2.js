@@ -54,22 +54,30 @@ function renderKeyLevels(k) {
     return;
   }
 
-  const r = k.nearest_resistance;
-  const s = k.nearest_support;
+  const rList = Array.isArray(k.resistance) ? k.resistance : [];
+  const sList = Array.isArray(k.support) ? k.support : [];
 
-  const rText = r
-    ? `${r.price.toFixed(2)} (${r.strength})`
-    : "—";
+  if (rList.length === 0 && sList.length === 0) {
+    el.innerHTML = "<em>No key levels</em>";
+    return;
+  }
 
-  const sText = s
-    ? `${s.price.toFixed(2)} (${s.strength})`
-    : "—";
+  const renderList = (label, arr) => {
+    if (arr.length === 0) {
+      return `<div><em>${label}:</em> —</div>`;
+    }
+    return `
+      <div><em>${label}:</em></div>
+      ${arr.map(v => `<div style="margin-left:12px;"><strong>${v}</strong></div>`).join("")}
+    `;
+  };
 
   el.innerHTML = `
-    <div><em>Resistance:</em> <strong>${rText}</strong></div>
-    <div><em>Support:</em> <strong>${sText}</strong></div>
+    ${renderList("Resistance", rList)}
+    ${renderList("Support", sList)}
   `;
 }
+
 
 /* ================= SESSION HIGH / LOW ================= */
 
