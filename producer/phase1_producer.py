@@ -1,19 +1,18 @@
 import json
+import requests
 import pandas as pd
 import pytz
 from datetime import datetime, time
 import yfinance as yf
-import requests
-from io import StringIO
 
 IST = pytz.timezone("Asia/Kolkata")
 
+# =========================
+# HELPERS
+# =========================
 def now_ist():
     return datetime.now(IST)
 
-# =========================
-# SAFE DATA HELPERS
-# =========================
 def fix_index(df):
     if df.index.tz is None:
         df.index = df.index.tz_localize("UTC").tz_convert(IST)
@@ -29,7 +28,7 @@ def normalize_cols(df):
     return df
 
 # =========================
-# FETCH NIFTY 5M
+# FETCH NIFTY 5m DATA
 # =========================
 df = yf.download("^NSEI", interval="5m", period="1d", progress=False)
 df = fix_index(df)
@@ -45,19 +44,18 @@ win = df[(df.index.time >= START) & (df.index.time <= END)]
 trend_architect = {}
 
 if now_ist().time() >= FREEZE and not win.empty:
-    # MAJOR CANDLE (BODY)
+    # Major candle BODY
     win["body"] = (win["close"] - win["open"]).abs()
     major = win.loc[win["body"].idxmax()]
-
     major_color = "GREEN" if major["close"] > major["open"] else "RED"
 
-    # NEXT CANDLE RELATION
+    # Next candle relation
     nxt = win[win.index > major.name].iloc[0] if any(win.index > major.name) else None
     relation = "NA"
     if nxt is not None:
         relation = "SUPPORTING" if (nxt["close"] - nxt["open"]) * (major["close"] - major["open"]) > 0 else "OPPOSING"
 
-    # TOTAL DISTANCE
+    # Total distance
     open_0930 = win.iloc[0]["open"]
     close_1100 = win[win.index.time == END]["close"].iloc[0]
     distance = round(close_1100 - open_0930, 2)
@@ -68,7 +66,6 @@ if now_ist().time() >= FREEZE and not win.empty:
     for i in range(1, len(win)):
         p = win.iloc[i - 1]
         c = win.iloc[i]
-
         bp = sorted([p["open"], p["close"]])
         bc = sorted([c["open"], c["close"]])
 
@@ -81,7 +78,6 @@ if now_ist().time() >= FREEZE and not win.empty:
         if (c["high"] - c["low"]) < 25:
             small_candles += 1
 
-    # MARKET CHARACTER
     if overlaps <= 2 and small_candles <= 3:
         mc = "Steady move with buyer acceptance"
     elif overlaps >= 4 or small_candles >= 5:
@@ -113,53 +109,30 @@ if now_ist().time() >= FREEZE and not win.empty:
     }
 
 # =========================
-# FETCH FII / DII (STABLE SOURCE)
+# PCR (NSE OPTION CHAIN JSON)
 # =========================
-import pandas as pd
+headers = {"User-Agent": "Mozilla/5.0"}
+url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
+resp = requests.get(url, headers=headers, timeout=10).json()
 
-MC_URL = "https://www.moneycontrol.com/markets/fii-dii-data/cash/"
-tables = pd.read_html(MC_URL)
+records = resp["records"]["data"]
 
-# First table holds Cash Market Net Data
-flow_df = tables[0]
+call_oi = 0
+put_oi = 0
 
-flow_df.columns = [
-    "date",
-    "fii_gross_buy",
-    "fii_gross_sell",
-    "fii_net",
-    "dii_gross_buy",
-    "dii_gross_sell",
-    "dii_net"
-]
+for r in records:
+    if "CE" in r:
+        call_oi += r["CE"].get("openInterest", 0)
+    if "PE" in r:
+        put_oi += r["PE"].get("openInterest", 0)
 
-flow_df["date"] = pd.to_datetime(flow_df["date"], dayfirst=True)
-flow_df = flow_df.sort_values("date", ascending=False)
+pcr = round(put_oi / call_oi, 2) if call_oi > 0 else None
 
-# Latest completed trading day
-today_row = flow_df.iloc[0]
-as_of_date = today_row["date"].strftime("%Y-%m-%d")
-
-# Last 4 days
-last_4 = flow_df.head(4)
-
-institutional_flows = {
-    "as_of": as_of_date,
-    "unit": "₹ Cr",
-    "today": {
-        "fii": round(float(today_row["fii_net"]), 2),
-        "dii": round(float(today_row["dii_net"]), 2)
-    },
-    "history_4d": {
-        "fii": [
-            {"day": f"Day-{i+1}", "value": round(float(v), 2)}
-            for i, v in enumerate(last_4["fii_net"])
-        ],
-        "dii": [
-            {"day": f"Day-{i+1}", "value": round(float(v), 2)}
-            for i, v in enumerate(last_4["dii_net"])
-        ]
-    }
+pcr_block = {
+    "index": "NIFTY",
+    "type": "OI_PCR",
+    "value": pcr,
+    "as_of": resp["records"]["timestamp"]
 }
 
 # =========================
@@ -169,7 +142,7 @@ with open("snapshots/market_phase1.json", "r") as f:
     existing = json.load(f)
 
 existing["trend_architect"] = trend_architect
-existing["institutional_flows"] = institutional_flows
+existing["pcr"] = pcr_block
 existing["meta"]["last_updated"] = now_ist().strftime("%H:%M:%S")
 
 with open("snapshots/market_phase1.json", "w") as f:
