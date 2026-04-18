@@ -20,7 +20,7 @@ def fix_index(df):
         df.index = df.index.tz_convert(IST)
     return df
 
-def normalize_cols(df):
+def norm_cols(df):
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = [c[0].lower() for c in df.columns]
     else:
@@ -28,159 +28,151 @@ def normalize_cols(df):
     return df
 
 # =========================
-# FETCH NIFTY 5m DATA
+# LOAD EXISTING SNAPSHOT
 # =========================
-df = yf.download("^NSEI", interval="5m", period="1d", progress=False)
+with open("snapshots/market_phase1.json", "r") as f:
+    previous = json.load(f)
+
+# =========================
+# FETCH NIFTY 5‑MIN DATA
+# =========================
+df = yf.download("^NSEI", interval="5m", period="5d", progress=False)
 df = fix_index(df)
-df = normalize_cols(df)
+df = norm_cols(df)
 df = df.sort_index()
 
-# =========================
-# MARKET OPEN (FULLY RESTORED)
-# =========================
-opening_window = df[(df.index.time >= time(9, 15)) & (df.index.time <= time(9, 35))]
+# Detect last trading day with enough candles
+day_groups = df.groupby(df.index.date)
+valid_days = [d for d, g in day_groups if len(g) >= 10]
 
-opening_candle = None
-if not opening_window.empty:
-    oc_row = opening_window.iloc[0]
-    body = abs(oc_row["close"] - oc_row["open"])
-    range_pts = oc_row["high"] - oc_row["low"]
-    body_pct = round((body / range_pts) * 100, 1) if range_pts > 0 else 0
+if not valid_days:
+    # No market data → keep everything frozen
+    with open("snapshots/market_phase1.json", "w") as f:
+        json.dump(previous, f, indent=2)
+    exit(0)
 
-    opening_candle = {
-        "type": "OTHER",  # your existing classification logic can evolve later
-        "color": "GREEN" if oc_row["close"] > oc_row["open"] else "RED",
-        "size": round(body, 2),
-        "body_pct": body_pct,
-        "range": round(range_pts, 2),
-        "ohlc": {
-            "open": round(oc_row["open"], 2),
-            "high": round(oc_row["high"], 2),
-            "low": round(oc_row["low"], 2),
-            "close": round(oc_row["close"], 2),
-        },
-        "frozen_at": "09:35 IST"
-    }
-
-market_open = {
-    "gap": {
-        "direction": "DOWN",
-        "points": -14.8,
-        "frozen_at": "09:20 IST"
-    },
-    "opening_candle": opening_candle
-}
+last_day = valid_days[-1]
+day_df = day_groups.get_group(last_day)
 
 # =========================
-# TREND ARCHITECT (UNCHANGED)
+# MARKET OPEN (FROZEN)
 # =========================
-START = time(9, 30)
-END = time(11, 0)
-FREEZE = time(11, 5)
+if "market_open" not in previous:
+    oc_window = day_df[(day_df.index.time >= time(9, 15)) & (day_df.index.time <= time(9, 35))]
+    if not oc_window.empty:
+        r = oc_window.iloc[0]
+        body = abs(r["close"] - r["open"])
+        rng = r["high"] - r["low"]
 
-win = df[(df.index.time >= START) & (df.index.time <= END)]
-
-trend_architect = {}
-
-if now_ist().time() >= FREEZE and not win.empty:
-    win["body"] = (win["close"] - win["open"]).abs()
-    major = win.loc[win["body"].idxmax()]
-    major_color = "GREEN" if major["close"] > major["open"] else "RED"
-
-    nxt = win[win.index > major.name].iloc[0] if any(win.index > major.name) else None
-    relation = "NA"
-    if nxt is not None:
-        relation = "SUPPORTING" if (nxt["close"] - nxt["open"]) * (major["close"] - major["open"]) > 0 else "OPPOSING"
-
-    open_0930 = win.iloc[0]["open"]
-    close_1100 = win[win.index.time == END]["close"].iloc[0]
-    distance = round(close_1100 - open_0930, 2)
-
-    overlaps = 0
-    small_candles = 0
-
-    for i in range(1, len(win)):
-        p = win.iloc[i - 1]
-        c = win.iloc[i]
-
-        bp = sorted([p["open"], p["close"]])
-        bc = sorted([c["open"], c["close"]])
-
-        overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
-        body = bc[1] - bc[0]
-
-        if body > 0 and overlap >= 0.8 * body:
-            overlaps += 1
-        if (c["high"] - c["low"]) < 25:
-            small_candles += 1
-
-    if overlaps <= 2 and small_candles <= 3:
-        mc = "Steady move with buyer acceptance"
-    elif overlaps >= 4 or small_candles >= 5:
-        mc = "Upward movement with frequent overlap — be cautious"
-    else:
-        mc = "Directional bias intact, but higher risk of deep pullback"
-
-    trend_architect = {
-        "gap_behavior": {
-            "status": "Closed by 11:05",
-            "frozen_at": "11:05 IST"
-        },
-        "major_candle": {
-            "range": round(major["body"], 2),
-            "type": "MARUBOZU",
-            "color": major_color,
-            "time": major.name.strftime("%H:%M")
-        },
-        "next_candle": { "relation": relation },
-        "distance_travelled": {
-            "points": distance,
-            "direction": "UP" if distance > 0 else "DOWN",
-            "overlaps": overlaps,
-            "small_candles": small_candles
-        },
-        "market_character": mc
-    }
+        previous["market_open"] = {
+            "gap": {
+                "direction": "DOWN",
+                "points": round(r["open"] - previous["previous_day"]["pdc"], 2),
+                "frozen_at": "09:20 IST"
+            },
+            "opening_candle": {
+                "type": "OTHER",
+                "color": "GREEN" if r["close"] > r["open"] else "RED",
+                "size": round(body, 2),
+                "body_pct": round((body / rng) * 100, 1) if rng > 0 else 0,
+                "range": round(rng, 2),
+                "ohlc": {
+                    "open": round(r["open"], 2),
+                    "high": round(r["high"], 2),
+                    "low": round(r["low"], 2),
+                    "close": round(r["close"], 2),
+                },
+                "frozen_at": "09:35 IST"
+            }
+        }
 
 # =========================
-# PCR (SAFE – NEVER CRASHES)
+# TREND ARCHITECT (FROZEN)
 # =========================
-pcr_block = None
+if "trend_architect" not in previous or not previous["trend_architect"]:
+    win = day_df[(day_df.index.time >= time(9, 30)) & (day_df.index.time <= time(11, 0))]
+
+    if len(win) >= 6:
+        win["body"] = (win["close"] - win["open"]).abs()
+        major = win.loc[win["body"].idxmax()]
+        major_color = "GREEN" if major["close"] > major["open"] else "RED"
+
+        overlaps = 0
+        small_c = 0
+
+        for i in range(1, len(win)):
+            p = win.iloc[i - 1]
+            c = win.iloc[i]
+            bp = sorted([p["open"], p["close"]])
+            bc = sorted([c["open"], c["close"]])
+            overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
+            body = bc[1] - bc[0]
+
+            if body > 0 and overlap >= 0.8 * body:
+                overlaps += 1
+            if (c["high"] - c["low"]) < 25:
+                small_c += 1
+
+        open_0930 = win.iloc[0]["open"]
+        close_1100 = win[win.index.time == time(11, 0)]["close"].iloc[0]
+        dist = round(close_1100 - open_0930, 2)
+
+        if overlaps <= 2 and small_c <= 3:
+            mc = "Steady move with buyer acceptance"
+        elif overlaps >= 4 or small_c >= 5:
+            mc = "Upward movement with frequent overlap — be cautious"
+        else:
+            mc = "Directional bias intact, but higher risk of deep pullback"
+
+        previous["trend_architect"] = {
+            "gap_behavior": {
+                "status": "Closed by 11:05",
+                "frozen_at": "11:05 IST"
+            },
+            "major_candle": {
+                "range": round(major["body"], 2),
+                "type": "MARUBOZU",
+                "color": major_color,
+                "time": major.name.strftime("%H:%M")
+            },
+            "next_candle": {
+                "relation": "SUPPORTING" if major_color == "GREEN" else "OPPOSING"
+            },
+            "distance_travelled": {
+                "points": dist,
+                "direction": "UP" if dist > 0 else "DOWN",
+                "overlaps": overlaps,
+                "small_candles": small_c
+            },
+            "market_character": mc
+        }
+
+# =========================
+# PCR (SAFE)
+# =========================
 try:
     headers = {"User-Agent": "Mozilla/5.0"}
-    url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
-    resp = requests.get(url, headers=headers, timeout=10).json()
+    oc = requests.get(
+        "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY",
+        headers=headers, timeout=10
+    ).json()
 
-    if "records" in resp:
-        call_oi = 0
-        put_oi = 0
-        for r in resp["records"]["data"]:
-            if "CE" in r:
-                call_oi += r["CE"].get("openInterest", 0)
-            if "PE" in r:
-                put_oi += r["PE"].get("openInterest", 0)
-
-        pcr_block = {
+    if "records" in oc:
+        call_oi = sum(r.get("CE", {}).get("openInterest", 0) for r in oc["records"]["data"])
+        put_oi = sum(r.get("PE", {}).get("openInterest", 0) for r in oc["records"]["data"])
+        previous["pcr"] = {
             "index": "NIFTY",
             "type": "OI_PCR",
             "value": round(put_oi / call_oi, 2) if call_oi > 0 else None,
-            "as_of": resp["records"]["timestamp"]
+            "as_of": oc["records"]["timestamp"]
         }
 except Exception:
-    pcr_block = None
+    pass
 
 # =========================
-# WRITE SNAPSHOT
+# META UPDATE
 # =========================
-with open("snapshots/market_phase1.json", "r") as f:
-    existing = json.load(f)
-
-existing["market_open"] = market_open
-existing["trend_architect"] = trend_architect
-if pcr_block:
-    existing["pcr"] = pcr_block
-
-existing["meta"]["last_updated"] = now_ist().strftime("%H:%M:%S")
+previous["meta"]["last_updated"] = now_ist().strftime("%H:%M:%S")
 
 with open("snapshots/market_phase1.json", "w") as f:
-    json.dump(existing, f, indent=2)
+    json.dump(previous, f, indent=2)
