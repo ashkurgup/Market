@@ -5,22 +5,22 @@ import pytz
 import pandas as pd
 import yfinance as yf
 
-# =========================================================
+# ==============================
 # CONFIG
-# =========================================================
+# ==============================
 
-SYMBOL = "^NSEI"  # NIFTY 50 (Yahoo Finance)
+SYMBOL = "^NSEI"
 IST = pytz.timezone("Asia/Kolkata")
 
-LOOKBACK_4H_DAYS = 70
-LOOKBACK_1H_DAYS = 22
+LOOKBACK_4H_DAYS = 70   # Strong
+LOOKBACK_1H_DAYS = 22   # Moderate
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
 
-# =========================================================
+# ==============================
 # DATA FETCH
-# =========================================================
+# ==============================
 
 def fetch_ohlc(interval, days):
     df = yf.download(
@@ -31,7 +31,7 @@ def fetch_ohlc(interval, days):
     )
 
     if df.empty:
-        raise RuntimeError(f"No data fetched for interval {interval}")
+        raise RuntimeError(f"No data for {interval}")
 
     df = df.reset_index()
     df.rename(columns={
@@ -45,37 +45,31 @@ def fetch_ohlc(interval, days):
     df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_convert(IST)
     return df
 
-# =========================================================
-# WEEKLY LEVELS (LAST FRIDAY CLOSE)
-# =========================================================
+# ==============================
+# WEEKLY LEVELS (FRIDAY CLOSE)
+# ==============================
 
 def compute_weekly_levels(df):
     df = df.copy()
-    df["weekday"] = df["timestamp"].dt.weekday  # Monday=0, Friday=4
+    df["weekday"] = df["timestamp"].dt.weekday  # Mon=0, Fri=4
 
-    friday_df = df[df["weekday"] == 4]
-    if friday_df.empty:
-        return {
-            "previous_week_high": None,
-            "previous_week_low": None,
-            "week_start": None,
-            "week_end": None
-        }
+    fridays = df[df["weekday"] == 4]
+    if fridays.empty:
+        return dict.fromkeys(
+            ["previous_week_high", "previous_week_low", "week_start", "week_end"]
+        )
 
-    friday_closes = friday_df.groupby(friday_df["timestamp"].dt.date)["timestamp"].max()
-    df["is_week_close"] = df["timestamp"].isin(friday_closes)
+    friday_last = fridays.groupby(fridays["timestamp"].dt.date)["timestamp"].max()
+    df["is_week_close"] = df["timestamp"].isin(friday_last)
 
     df["week_id"] = df["is_week_close"].cumsum()
-    last_completed_week_id = df["week_id"].max() - 1
+    target_week = df["week_id"].max() - 1
+    week_df = df[df["week_id"] == target_week]
 
-    week_df = df[df["week_id"] == last_completed_week_id]
     if week_df.empty:
-        return {
-            "previous_week_high": None,
-            "previous_week_low": None,
-            "week_start": None,
-            "week_end": None
-        }
+        return dict.fromkeys(
+            ["previous_week_high", "previous_week_low", "week_start", "week_end"]
+        )
 
     return {
         "previous_week_high": float(week_df["high"].max()),
@@ -84,21 +78,17 @@ def compute_weekly_levels(df):
         "week_end": week_df["timestamp"].max().date().isoformat()
     }
 
-# =========================================================
-# SESSION LEVELS (15‑MIN, CLOSE‑BASED)
-# =========================================================
+# ==============================
+# SESSION LEVELS (15m)
+# ==============================
 
 def compute_session_levels(df_5m):
     today = datetime.now(IST).date()
     start = datetime.combine(today, time(9, 15), IST)
     end = datetime.combine(today, time(15, 30), IST)
 
-    session_df = df_5m[
-        (df_5m["timestamp"] >= start) &
-        (df_5m["timestamp"] <= end)
-    ]
-
-    if session_df.empty:
+    s = df_5m[(df_5m["timestamp"] >= start) & (df_5m["timestamp"] <= end)]
+    if s.empty:
         return {
             "high": None,
             "low": None,
@@ -106,15 +96,14 @@ def compute_session_levels(df_5m):
             "update_rule": "on_candle_close"
         }
 
-    candles_15m = (
-        session_df
-        .set_index("timestamp")
-        .resample("15T", closed="right", label="right")
-        .agg({"high": "max", "low": "min"})
-        .dropna()
+    s15 = (
+        s.set_index("timestamp")
+         .resample("15T", closed="right", label="right")
+         .agg({"high": "max", "low": "min"})
+         .dropna()
     )
 
-    if candles_15m.empty:
+    if s15.empty:
         return {
             "high": None,
             "low": None,
@@ -123,166 +112,119 @@ def compute_session_levels(df_5m):
         }
 
     return {
-        "high": float(candles_15m["high"].max()),
-        "low": float(candles_15m["low"].min()),
+        "high": float(s15["high"].iloc[-1]),
+        "low": float(s15["low"].iloc[-1]),
         "based_on_timeframe": "15m",
         "update_rule": "on_candle_close"
     }
 
-# =========================================================
-# SWING DETECTION
-# =========================================================
+# ==============================
+# SWING DETECTION (SAFE)
+# ==============================
 
-def detect_swings(df, side, is_high=True):
+def detect_swings(df, side, mode):
     swings = []
-    series = df["high"] if is_high else df["low"]
+    series = df["high"] if mode == "high" else df["low"]
 
     for i in range(side, len(df) - side):
-        center = series.iloc[i]
-        left = series.iloc[i - side:i]
-        right = series.iloc[i + 1:i + 1 + side]
+        center = float(series.iloc[i])
+        left = series.iloc[i - side:i].to_numpy()
+        right = series.iloc[i + 1:i + side + 1].to_numpy()
 
-        if is_high and center > left.max() and center > right.max():
+        if mode == "high" and center > left.max() and center > right.max():
             swings.append(center)
 
-        if not is_high and center < left.min() and center < right.min():
+        if mode == "low" and center < left.min() and center < right.min():
             swings.append(center)
 
     return swings
 
-# =========================================================
-# KEY LEVELS
-# =========================================================
+# ==============================
+# KEY LEVELS (FINAL)
+# ==============================
 
-def compute_key_levels(current_price, weekly, session):
-    levels = {"resistance": [], "support": []}
+def compute_key_levels(price, weekly):
+    resistance = None
+    support = None
 
-    # ---- WEEKLY (STRONG LOCK) ----
-    if weekly["previous_week_high"] and weekly["previous_week_high"] > current_price:
-        levels["resistance"].append({
+    # ---- WEEKLY (Strong) ----
+    if weekly["previous_week_high"] and weekly["previous_week_high"] > price:
+        resistance = {
             "price": weekly["previous_week_high"],
             "strength": "Strong",
             "source": "Weekly High"
-        })
+        }
 
-    if weekly["previous_week_low"] and weekly["previous_week_low"] < current_price:
-        levels["support"].append({
+    if weekly["previous_week_low"] and weekly["previous_week_low"] < price:
+        support = {
             "price": weekly["previous_week_low"],
             "strength": "Strong",
             "source": "Weekly Low"
-        })
+        }
 
-    # ---- 4H STRUCTURE (STRONG) ----
-    df_4h = fetch_ohlc("4h", LOOKBACK_4H_DAYS)
-    res_4h = detect_swings(df_4h, side=2, is_high=True)
-    sup_4h = detect_swings(df_4h, side=2, is_high=False)
+    # ---- 4H (Strong) ----
+    df4 = fetch_ohlc("4h", LOOKBACK_4H_DAYS)
+    r4 = detect_swings(df4, 2, "high")
+    s4 = detect_swings(df4, 2, "low")
 
-    for p in res_4h:
-        if p > current_price:
-            levels["resistance"].append({
-                "price": float(p),
-                "strength": "Strong",
-                "source": "4H Structure"
-            })
+    for p in sorted(r4):
+        if p > price and resistance is None:
+            resistance = {"price": p, "strength": "Strong", "source": "4H Structure"}
 
-    for p in sup_4h:
-        if p < current_price:
-            levels["support"].append({
-                "price": float(p),
-                "strength": "Strong",
-                "source": "4H Structure"
-            })
+    for p in sorted(s4, reverse=True):
+        if p < price and support is None:
+            support = {"price": p, "strength": "Strong", "source": "4H Structure"}
 
-    # ---- 1H STRUCTURE (MODERATE) ----
-    df_1h = fetch_ohlc("1h", LOOKBACK_1H_DAYS)
-    res_1h = detect_swings(df_1h, side=3, is_high=True)
-    sup_1h = detect_swings(df_1h, side=3, is_high=False)
+    # ---- 1H (Moderate) ----
+    df1 = fetch_ohlc("1h", LOOKBACK_1H_DAYS)
+    r1 = detect_swings(df1, 3, "high")
+    s1 = detect_swings(df1, 3, "low")
 
-    for p in res_1h:
-        if p > current_price:
-            levels["resistance"].append({
-                "price": float(p),
-                "strength": "Moderate",
-                "source": "1H Structure"
-            })
+    for p in sorted(r1):
+        if p > price and resistance is None:
+            resistance = {"price": p, "strength": "Moderate", "source": "1H Structure"}
 
-    for p in sup_1h:
-        if p < current_price:
-            levels["support"].append({
-                "price": float(p),
-                "strength": "Moderate",
-                "source": "1H Structure"
-            })
+    for p in sorted(s1, reverse=True):
+        if p < price and support is None:
+            support = {"price": p, "strength": "Moderate", "source": "1H Structure"}
 
-    # ---- SESSION (MODERATE‑LOW) ----
-    if session["high"] and session["high"] > current_price:
-        levels["resistance"].append({
-            "price": float(session["high"]),
-            "strength": "Moderate",
-            "source": "Session High"
-        })
+    return {
+        "nearest_resistance": resistance,
+        "nearest_support": support
+    }
 
-    if session["low"] and session["low"] < current_price:
-        levels["support"].append({
-            "price": float(session["low"]),
-            "strength": "Moderate",
-            "source": "Session Low"
-        })
-
-    # ---- SORT + SELECT (NEAREST FIRST) ----
-    levels["resistance"] = sorted(
-        levels["resistance"], key=lambda x: x["price"]
-    )[:2]
-
-    levels["support"] = sorted(
-        levels["support"], key=lambda x: x["price"], reverse=True
-    )[:2]
-
-    return levels
-
-# =========================================================
-# MAIN PRODUCER
-# =========================================================
+# ==============================
+# MAIN
+# ==============================
 
 def run_phase2_producer():
     print(">>> Phase‑2 producer started")
 
-    df_5m = fetch_ohlc("5m", 7)
-    current_price = float(df_5m["close"].iloc[-1])
+    df5 = fetch_ohlc("5m", 7)
+    current_price = float(df5["close"].iloc[-1])
 
-    weekly = compute_weekly_levels(df_5m)
-    session = compute_session_levels(df_5m)
-    key_levels = compute_key_levels(current_price, weekly, session)
+    weekly = compute_weekly_levels(df5)
+    session = compute_session_levels(df5)
+    key_levels = compute_key_levels(current_price, weekly)
 
     snapshot = {
         "phase": 2,
         "symbol": "NIFTY",
-        "session": {
-            "start": "09:15",
-            "end": "15:30",
-            "timezone": "IST"
-        },
+        "session": {"start": "09:15", "end": "15:30", "timezone": "IST"},
         "weekly_levels": weekly,
         "key_levels": key_levels,
         "session_levels": session,
         "structure_events": [],
         "momentum_events": [],
-        "global_indices": {
-            "time_window_minutes": 30,
-            "indices": []
-        },
-        "bias": {
-            "day": None,
-            "h4": None,
-            "h1": None
-        },
+        "global_indices": {"time_window_minutes": 30, "indices": []},
+        "bias": {"day": None, "h4": None, "h1": None},
         "computed_at": datetime.now(IST).isoformat()
     }
 
     with open(SNAPSHOT_PATH, "w") as f:
         json.dump(snapshot, f, indent=2)
 
-    print(">>> Phase‑2 snapshot written")
+    print(">>> Phase‑2 snapshot written successfully")
 
 if __name__ == "__main__":
     run_phase2_producer()
