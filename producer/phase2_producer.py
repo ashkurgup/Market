@@ -1,47 +1,63 @@
 import json
+import os
 from datetime import datetime, time
 import pandas as pd
 import pytz
 
+# -------------------------------------------------------------------
+# CONFIG
+# -------------------------------------------------------------------
+
 IST = pytz.timezone("Asia/Kolkata")
 
-# ------------------------------------------------------------------------------
-# Helper Functions
-# ------------------------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
+
+# -------------------------------------------------------------------
+# DATA LOADER (same pattern as phase1)
+# -------------------------------------------------------------------
 
 def load_ohlcv():
     """
-    Load OHLCV data.
     Expected columns:
-    ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-    Timestamp must be timezone-aware (IST).
+    timestamp, open, high, low, close, volume
+    Timezone naive or aware; will be localized to IST.
     """
-    # Placeholder: replace with your actual data source
-    return pd.read_csv(
-        "data/ohlcv_5m.csv",
+    df = pd.read_csv(
+        os.path.join(BASE_DIR, "data", "ohlcv_5m.csv"),
         parse_dates=["timestamp"]
     )
+    df["timestamp"] = df["timestamp"].dt.tz_localize(IST, nonexistent="shift_forward")
+    return df
 
+# -------------------------------------------------------------------
+# WEEKLY LEVELS
+# -------------------------------------------------------------------
 
-def get_previous_completed_week(df):
+def compute_previous_week_levels(df):
+    today = datetime.now(IST).date()
     df["week"] = df["timestamp"].dt.to_period("W")
-    current_week = datetime.now(IST).date().isocalendar()[1]
 
-    df["week_number"] = df["timestamp"].dt.isocalendar().week
-    completed_weeks = df[df["week_number"] < current_week]
+    completed_weeks = df[df["timestamp"].dt.date < today]
+    last_week = completed_weeks["week"].max()
 
-    last_week_number = completed_weeks["week_number"].max()
-    return completed_weeks[completed_weeks["week_number"] == last_week_number]
+    week_df = completed_weeks[completed_weeks["week"] == last_week]
 
+    if week_df.empty:
+        return dict.fromkeys(
+            ["previous_week_high", "previous_week_low", "week_start", "week_end"]
+        )
 
-def compute_weekly_levels(df):
     return {
-        "previous_week_high": float(df["high"].max()),
-        "previous_week_low": float(df["low"].min()),
-        "week_start": df["timestamp"].min().date().isoformat(),
-        "week_end": df["timestamp"].max().date().isoformat()
+        "previous_week_high": float(week_df["high"].max()),
+        "previous_week_low": float(week_df["low"].min()),
+        "week_start": week_df["timestamp"].min().date().isoformat(),
+        "week_end": week_df["timestamp"].max().date().isoformat()
     }
 
+# -------------------------------------------------------------------
+# SESSION LEVELS (15‑MIN, CLOSE ONLY)
+# -------------------------------------------------------------------
 
 def compute_session_levels(df):
     today = datetime.now(IST).date()
@@ -54,8 +70,15 @@ def compute_session_levels(df):
         (df["timestamp"] <= session_end)
     ]
 
-    # Resample to 15-minute candles (candle-close based)
-    session_15m = (
+    if session_df.empty:
+        return {
+            "high": None,
+            "low": None,
+            "based_on_timeframe": "15m",
+            "update_rule": "on_candle_close"
+        }
+
+    candles_15m = (
         session_df
         .set_index("timestamp")
         .resample("15T", closed="right", label="right")
@@ -67,30 +90,25 @@ def compute_session_levels(df):
             "volume": "sum"
         })
         .dropna()
-        .reset_index()
     )
 
     return {
-        "high": float(session_15m["high"].max()) if not session_15m.empty else None,
-        "low": float(session_15m["low"].min()) if not session_15m.empty else None,
+        "high": float(candles_15m["high"].max()),
+        "low": float(candles_15m["low"].min()),
         "based_on_timeframe": "15m",
         "update_rule": "on_candle_close"
     }
 
-
-# ------------------------------------------------------------------------------
-# Main Producer
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------
+# MAIN PRODUCER
+# -------------------------------------------------------------------
 
 def run_phase2_producer():
+    print(">>> Phase‑2 producer started")
+
     df = load_ohlcv()
-    df["timestamp"] = df["timestamp"].dt.tz_localize(IST)
 
-    # Weekly Levels
-    prev_week_df = get_previous_completed_week(df)
-    weekly_levels = compute_weekly_levels(prev_week_df)
-
-    # Session Levels
+    weekly_levels = compute_previous_week_levels(df)
     session_levels = compute_session_levels(df)
 
     snapshot = {
@@ -104,6 +122,7 @@ def run_phase2_producer():
         },
 
         "weekly_levels": weekly_levels,
+
         "key_levels": {
             "nearest_resistance": None,
             "nearest_support": None
@@ -133,9 +152,12 @@ def run_phase2_producer():
         "computed_at": datetime.now(IST).isoformat()
     }
 
-    with open("snapshots/market_phase2.json", "w") as f:
+    print(f">>> Writing snapshot → {SNAPSHOT_PATH}")
+
+    with open(SNAPSHOT_PATH, "w") as f:
         json.dump(snapshot, f, indent=2)
 
+    print(">>> Phase‑2 snapshot written successfully")
 
 if __name__ == "__main__":
     run_phase2_producer()
