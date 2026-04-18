@@ -7,10 +7,10 @@
     "timezone": "IST"
   },
   "weekly_levels": {
-    "previous_week_high": 24073.80078125,
-    "previous_week_low": 22543.400390625,
-    "week_start": "2026-04-06",
-    "week_end": "2026-04-10"
+    "previous_week_high": null,
+    "previous_week_low": null,
+    "week_start": null,
+    "week_end": null
   },
   "key_levels": {
     "nearest_resistance": null,
@@ -33,5 +33,5 @@
     "h4": null,
     "h1": null
   },
-  "computed_at": "2026-04-18T14:08:19.594856+05:30"
+  "computed_at": "2026-04-18T14:18:22.836457+05:30"
 }
