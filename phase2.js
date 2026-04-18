@@ -37,14 +37,14 @@ function renderLastUpdated(ts) {
 function renderWeeklyLevels(w) {
   const el = document.querySelector("#weekly-levels .content");
   if (!el || !w || w.previous_week_high == null) {
-    el.innerText = "No data";
+    el.innerHTML = '<span class="muted">No data</span>';
     return;
   }
 
   el.innerHTML = `
-    High: <strong>${w.previous_week_high.toFixed(2)}</strong><br>
-    Low: <strong>${w.previous_week_low.toFixed(2)}</strong><br>
-    (${w.week_start} → ${w.week_end})
+    <div class="line muted">High: <strong>${w.previous_week_high.toFixed(2)}</strong></div>
+    <div class="line muted">Low: <strong>${w.previous_week_low.toFixed(2)}</strong></div>
+    <div class="line muted">(${w.week_start} → ${w.week_end})</div>
   `;
 }
 
