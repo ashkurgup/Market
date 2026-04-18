@@ -22,14 +22,15 @@
   `);
 
   /* =======================
-     VOLATILITY + CHOPPINESS
+     VOLATILITY
   ======================= */
   render("box-volatility", "volatility", `
     <h3>VOLATILITY (ATR)</h3>
     <div class="value">${safe(d.volatility?.atr)}</div>
     <div class="small">${safe(d.volatility?.sample_status)}</div>
     <div class="line">
-      <b>Choppiness:</b> ${safe(d.choppiness?.state)} — ${safe(d.choppiness?.message)}
+      <b>Choppiness:</b>
+      ${safe(d.choppiness?.state)} — ${safe(d.choppiness?.message)}
     </div>
   `);
 
@@ -48,7 +49,7 @@
   `);
 
   /* =======================
-     PREVIOUS DAY
+     PREVIOUS DAY ANCHORS
   ======================= */
   render("box-anchors", "anchors", `
     <h3>PREVIOUS DAY ANCHORS</h3>
@@ -109,29 +110,22 @@
   ======================= */
   const flows = d.institutional_flows ?? {};
 
-  const fmt = v =>
-    v > 0 ? `<span class="green">+${v}</span>` :
-    v < 0 ? `<span class="red">${v}</span>` : "0";
-
-  const hist = (arr = []) =>
-    arr.map(x => `${x.day}: ${fmt(x.value)}`).join(" | ");
-
   render("box-flows", "institutional", `
     <h3>INSTITUTIONAL FLOWS</h3>
-
     <div class="line">
       <b>Today (${safe(flows.as_of)}):</b>
-      FII ${fmt(flows.today?.fii)} |
-      DII ${fmt(flows.today?.dii)}
+      FII ${safe(flows.today?.fii)} | DII ${safe(flows.today?.dii)}
     </div>
+    <div class="small"><b>FII (Last 4):</b> ${safe(flows.history_4d?.fii?.map(x => x.value).join(" | "))}</div>
+    <div class="small"><b>DII (Last 4):</b> ${safe(flows.history_4d?.dii?.map(x => x.value).join(" | "))}</div>
+  `);
 
-    <div class="small">
-      <b>FII (Last 4):</b> ${hist(flows.history_4d?.fii)}
-    </div>
-
-    <div class="small">
-      <b>DII (Last 4):</b> ${hist(flows.history_4d?.dii)}
-    </div>
+  /* =======================
+     PCR
+  ======================= */
+  render("box-pcr", "pcr", `
+    <h3>PCR (OPTIONS)</h3>
+    <div class="value">${safe(d.pcr?.value)}</div>
+    <div class="small">As of ${safe(d.pcr?.as_of)}</div>
   `);
 })();
-``
