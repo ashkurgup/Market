@@ -1,9 +1,9 @@
 import json
 import os
-from datetime import datetime, time
 import pytz
 import pandas as pd
 import yfinance as yf
+from datetime import datetime, time
 
 # ==============================
 # CONFIG
@@ -12,332 +12,145 @@ import yfinance as yf
 SYMBOL = "^NSEI"
 IST = pytz.timezone("Asia/Kolkata")
 
-LOOKBACK_4H_DAYS = 70
-LOOKBACK_1H_DAYS = 22
-
-MAX_GAP_POINTS = 300
-ACCEPTANCE_POINTS = 20
-ACCEPTANCE_1M_CANDLES = 3
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
 
 # ==============================
-# STRUCTURE EVENT STATE (DEDUP)
+# HELPERS
 # ==============================
 
-LAST_STRUCTURE_EVENT = {}
+def now_ist():
+    return datetime.now(IST)
 
-# ==============================
-# DATA FETCH
-# ==============================
-
-def fetch_ohlc(interval, days):
+def fetch_intraday_5m(days=5):
     df = yf.download(
         SYMBOL,
+        interval="5m",
         period=f"{days}d",
-        interval=interval,
         progress=False
     )
 
     if df.empty:
-        raise RuntimeError(f"No data for {interval}")
+        raise RuntimeError("No intraday data")
 
-    df = df.reset_index()
-    df.rename(columns={
-        "Datetime": "timestamp",
-        "Open": "open",
-        "High": "high",
-        "Low": "low",
-        "Close": "close"
-    }, inplace=True)
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [c[0].lower() for c in df.columns]
+    else:
+        df.columns = [c.lower() for c in df.columns]
 
-    df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_convert(IST)
-    return df
+    if df.index.tz is None:
+        df.index = df.index.tz_localize("UTC").tz_convert(IST)
+    else:
+        df.index = df.index.tz_convert(IST)
 
-# ==============================
-# WEEKLY LEVELS (FRIDAY CLOSE)
-# ==============================
-
-def compute_weekly_levels(df):
-    df = df.copy()
-    df["weekday"] = df["timestamp"].dt.weekday
-
-    fridays = df[df["weekday"] == 4]
-    if fridays.empty:
-        return dict.fromkeys(
-            ["previous_week_high", "previous_week_low", "week_start", "week_end"]
-        )
-
-    friday_last = fridays.groupby(fridays["timestamp"].dt.date)["timestamp"].max()
-    df["is_week_close"] = df["timestamp"].isin(friday_last)
-
-    df["week_id"] = df["is_week_close"].cumsum()
-    week_df = df[df["week_id"] == df["week_id"].max() - 1]
-
-    if week_df.empty:
-        return dict.fromkeys(
-            ["previous_week_high", "previous_week_low", "week_start", "week_end"]
-        )
-
-    return {
-        "previous_week_high": float(week_df["high"].max()),
-        "previous_week_low": float(week_df["low"].min()),
-        "week_start": week_df["timestamp"].min().date().isoformat(),
-        "week_end": week_df["timestamp"].max().date().isoformat()
-    }
+    return df.sort_index()
 
 # ==============================
-# SESSION LEVELS (15m)
+# TREND ARCHITECT @ 13:00
 # ==============================
 
-def compute_session_levels(df_5m):
-    today = datetime.now(IST).date()
-    start = datetime.combine(today, time(9, 15), IST)
-    end = datetime.combine(today, time(15, 30), IST)
+def compute_trend_architect_1300(day_df, previous):
+    current_time = now_ist().time()
 
-    s = df_5m[(df_5m["timestamp"] >= start) & (df_5m["timestamp"] <= end)]
-    if s.empty:
-        return {
-            "high": None,
-            "low": None,
-            "based_on_timeframe": "15m",
-            "update_rule": "on_candle_close"
-        }
+    # Freeze after 13:00
+    if current_time > time(13, 0) and "trend_architect_1300" in previous:
+        return previous["trend_architect_1300"]
 
-    s15 = (
-        s.set_index("timestamp")
-         .resample("15T", closed="right", label="right")
-         .agg({"high": "max", "low": "min"})
-         .dropna()
-    )
+    win = day_df[
+        (day_df.index.time >= time(9, 30)) &
+        (day_df.index.time <= min(current_time, time(13, 0)))
+    ]
 
-    if s15.empty:
-        return {
-            "high": None,
-            "low": None,
-            "based_on_timeframe": "15m",
-            "update_rule": "on_candle_close"
-        }
-
-    return {
-        "high": float(s15["high"].iloc[-1]),
-        "low": float(s15["low"].iloc[-1]),
-        "based_on_timeframe": "15m",
-        "update_rule": "on_candle_close"
-    }
-
-# ==============================
-# SUPPORT / RESISTANCE ENGINE
-# ==============================
-
-def count_respects(df_5m, level, lookback=500):
-    level = float(level)
-    respects = 0
-    recent = df_5m.tail(lookback)
-
-    for i in range(1, len(recent) - 1):
-        price = float(recent["close"].iloc[i])
-        next_price = float(recent["close"].iloc[i + 1])
-        if abs(price - level) <= 10 and abs(next_price - price) >= 30:
-            respects += 1
-    return respects
-
-
-def detect_structural_levels(df, side, is_high):
-    swings = []
-    series = df["high"] if is_high else df["low"]
-
-    for i in range(side, len(df) - side):
-        center = float(series.iloc[i])
-        left = series.iloc[i - side:i].to_numpy()
-        right = series.iloc[i + 1:i + side + 1].to_numpy()
-
-        if is_high and center > left.max() and center > right.max():
-            swings.append(center)
-        if not is_high and center < left.min() and center < right.min():
-            swings.append(center)
-
-    return list(set(swings))
-
-
-def compute_support_resistance(price, weekly, df_5m):
-    resistance, support = [], []
-
-    if weekly["previous_week_high"]:
-        resistance.append({"price": weekly["previous_week_high"], "strong": True})
-    if weekly["previous_week_low"]:
-        support.append({"price": weekly["previous_week_low"], "strong": True})
-
-    df4 = fetch_ohlc("4h", LOOKBACK_4H_DAYS)
-    for p in detect_structural_levels(df4, 2, True):
-        if count_respects(df_5m, p) >= 2:
-            resistance.append({"price": p, "strong": True})
-
-    for p in detect_structural_levels(df4, 2, False):
-        if count_respects(df_5m, p) >= 2:
-            support.append({"price": p, "strong": True})
-
-    resistance = sorted(resistance, key=lambda x: abs(x["price"] - price))
-    support = sorted(support, key=lambda x: abs(x["price"] - price))
-
-    def trim(levels):
-        out, last = [], price
-        for l in levels:
-            if abs(l["price"] - last) <= MAX_GAP_POINTS or not out:
-                out.append(l)
-                last = l["price"]
-        return out
-
-    def fmt(levels):
-        return [f'{l["price"]:.2f} (Strong)' for l in levels]
-
-    return {
-        "resistance": fmt(trim([l for l in resistance if l["price"] > price])),
-        "support": fmt(trim([l for l in support if l["price"] < price]))
-    }
-
-# ==============================
-# BOS / CHOCH (5m structure, 1m acceptance)
-# ==============================
-
-def detect_5m_structure(df5):
-    if len(df5) < 5:
+    if len(win) < 6:
         return None
-    h, l = df5["high"].to_numpy(), df5["low"].to_numpy()
 
-    if h[-3] > h[-4] and h[-3] > h[-2]:
-        return ("HH", float(h[-3]))
-    if l[-3] < l[-4] and l[-3] < l[-2]:
-        return ("LL", float(l[-3]))
-    if h[-3] < h[-4] and h[-3] < h[-2]:
-        return ("LH", float(h[-3]))
-    if l[-3] > l[-4] and l[-3] > l[-2]:
-        return ("HL", float(l[-3]))
-    return None
+    win = win.copy()
+    win["body"] = (win["close"] - win["open"]).abs()
 
+    major = win.loc[win["body"].idxmax()]
+    major_color = "GREEN" if major["close"] > major["open"] else "RED"
 
-def accept_1m(df1, level, direction):
-    recent = df1.tail(ACCEPTANCE_1M_CANDLES + 2)
-    closes = recent["close"].to_numpy()
-    times = recent["timestamp"].to_numpy()
+    overlaps = 0
+    small_c = 0
 
-    # Displacement rule (current breach only)
-    if direction == "up":
-        last_close = closes[-1]
-        if last_close >= level + ACCEPTANCE_POINTS:
-            return (
-                True,
-                times[-1],
-                f"1m displacement +{int(last_close - level)} pts"
-            )
+    for i in range(1, len(win)):
+        p = win.iloc[i - 1]
+        c = win.iloc[i]
+        bp = sorted([p["open"], p["close"]])
+        bc = sorted([c["open"], c["close"]])
+        overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
+        body = bc[1] - bc[0]
 
-    if direction == "down":
-        last_close = closes[-1]
-        if last_close <= level - ACCEPTANCE_POINTS:
-            return (
-                True,
-                times[-1],
-                f"1m displacement +{int(level - last_close)} pts"
-            )
+        if body > 0 and overlap >= 0.8 * body:
+            overlaps += 1
+        if (c["high"] - c["low"]) < 25:
+            small_c += 1
 
-    # Time acceptance rule
-    if direction == "up" and all(c > level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
-        return True, times[-1], "3x 1m closes"
+    open_0930 = win.iloc[0]["open"]
+    close_latest = win.iloc[-1]["close"]
+    dist = round(close_latest - open_0930, 2)
 
-    if direction == "down" and all(c < level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
-        return True, times[-1], "3x 1m closes"
+    if overlaps <= 2 and small_c <= 3:
+        mc = "Steady move with buyer acceptance"
+    elif overlaps >= 4 or small_c >= 5:
+        mc = "Upward movement with frequent overlap — be cautious"
+    else:
+        mc = "Directional bias intact, but higher risk of deep pullback"
 
-    return False, None, None
-
-
-def detect_bos_choch(df5, df1, key_levels):
-    events = []
-    struct = detect_5m_structure(df5)
-    if not struct:
-        return events
-
-    stype, sprice = struct
-    structural_lvls = [float(v.split()[0]) for side in key_levels.values() for v in side]
-
-    if not any(abs(sprice - lvl) <= 50 for lvl in structural_lvls):
-        return events
-
-    def eid(e, d): return f"{e}|{d}|{stype}|{int(sprice)}"
-    if (eid("BoS","Up") not in LAST_STRUCTURE_EVENT
-        and stype in ["LH","HH"]):
-
-        ok, ts, why = accept_1m(df1, sprice, "up")
-        if ok:
-            LAST_STRUCTURE_EVENT[eid("BoS","Up")] = True
-            events.append({
-                "event":"BoS","direction":"Up","structure":stype,
-                "level":round(sprice,2),"confirmed_by":why,
-                "timestamp":str(ts)
-            })
-
-    if (eid("BoS","Down") not in LAST_STRUCTURE_EVENT
-        and stype in ["HL","LL"]):
-
-        ok, ts, why = accept_1m(df1, sprice, "down")
-        if ok:
-            LAST_STRUCTURE_EVENT[eid("BoS","Down")] = True
-            events.append({
-                "event":"BoS","direction":"Down","structure":stype,
-                "level":round(sprice,2),"confirmed_by":why,
-                "timestamp":str(ts)
-            })
-
-    if (eid("ChoCH","Up") not in LAST_STRUCTURE_EVENT and stype=="LH"):
-        ok, ts, why = accept_1m(df1, sprice, "up")
-        if ok:
-            LAST_STRUCTURE_EVENT[eid("ChoCH","Up")] = True
-            events.append({
-                "event":"ChoCH","direction":"Up","structure":"LH break",
-                "level":round(sprice,2),"confirmed_by":why,
-                "timestamp":str(ts)
-            })
-
-    if (eid("ChoCH","Down") not in LAST_STRUCTURE_EVENT and stype=="HL"):
-        ok, ts, why = accept_1m(df1, sprice, "down")
-        if ok:
-            LAST_STRUCTURE_EVENT[eid("ChoCH","Down")] = True
-            events.append({
-                "event":"ChoCH","direction":"Down","structure":"HL break",
-                "level":round(sprice,2),"confirmed_by":why,
-                "timestamp":str(ts)
-            })
-
-    return events
+    return {
+        "window": "09:30 → 13:00",
+        "freeze_rule": "Frozen after 13:00",
+        "major_candle": {
+            "range": round(major["body"], 2),
+            "type": "MARUBOZU",
+            "color": major_color,
+            "time": major.name.strftime("%H:%M")
+        },
+        "next_candle": {
+            "relation": "SUPPORTING" if major_color == "GREEN" else "OPPOSING"
+        },
+        "distance_travelled": {
+            "points": dist,
+            "direction": "UP" if dist > 0 else "DOWN",
+            "overlaps": overlaps,
+            "small_candles": small_c
+        },
+        "market_character": mc,
+        "computed_at": now_ist().isoformat()
+    }
 
 # ==============================
 # MAIN
 # ==============================
 
-def run_phase2_producer():
-    df5 = fetch_ohlc("5m", 7)
-    df1 = fetch_ohlc("1m", 2)
-    price = float(df5["close"].iloc[-1])
+def run_phase2():
+    previous = {}
+    if os.path.exists(SNAPSHOT_PATH):
+        with open(SNAPSHOT_PATH, "r") as f:
+            previous = json.load(f)
 
-    weekly = compute_weekly_levels(df5)
-    session = compute_session_levels(df5)
-    key_levels = compute_support_resistance(price, weekly, df5)
-    structure_events = detect_bos_choch(df5, df1, key_levels)
+    df = fetch_intraday_5m()
+    day_groups = df.groupby(df.index.date)
+    valid_days = [d for d, g in day_groups if len(g) >= 10]
 
-    snapshot = {
+    if not valid_days:
+        return
+
+    last_day = valid_days[-1]
+    day_df = day_groups.get_group(last_day)
+
+    ta_1300 = compute_trend_architect_1300(day_df, previous)
+
+    snapshot = previous.copy()
+    snapshot.update({
         "phase": 2,
         "symbol": "NIFTY",
-        "session": {"start":"09:15","end":"15:30","timezone":"IST"},
-        "weekly_levels": weekly,
-        "key_levels": key_levels,
-        "session_levels": session,
-        "structure_events": structure_events,
-        "computed_at": datetime.now(IST).isoformat()
-    }
+        "trend_architect_1300": ta_1300,
+        "computed_at": now_ist().isoformat()
+    })
 
-    with open(SNAPSHOT_PATH,"w") as f:
-        json.dump(snapshot,f,indent=2)
-
+    with open(SNAPSHOT_PATH, "w") as f:
+        json.dump(snapshot, f, indent=2)
 
 if __name__ == "__main__":
-    run_phase2_producer()
+    run_phase2()
