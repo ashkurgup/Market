@@ -100,3 +100,17 @@
 .structural-note .note-list li {
   margin-bottom: 4px;
 }
+/* ===== Structural Bias Final Styling ===== */
+
+.structural-bias-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.structural-bias-label {
+  color: #f0ad4e; /* yellow / amber */
+}
+
+.structural-bias-value {
+  color: #111; /* black */
+}
