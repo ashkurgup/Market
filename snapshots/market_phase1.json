@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "10:53:15",
+    "last_updated": "11:03:44",
     "timezone": "IST"
   },
   "nifty": {
@@ -43,7 +43,28 @@
       "frozen_at": "09:35 IST"
     }
   },
-  "trend_architect": {},
+  "trend_architect": {
+    "gap_behavior": {
+      "status": "Closed by 11:05",
+      "frozen_at": "11:05 IST"
+    },
+    "major_candle": {
+      "range": 36.05,
+      "type": "MARUBOZU",
+      "color": "RED",
+      "time": "09:30"
+    },
+    "next_candle": {
+      "relation": "OPPOSING"
+    },
+    "distance_travelled": {
+      "points": 14.35,
+      "direction": "UP",
+      "overlaps": 4,
+      "small_candles": 12
+    },
+    "market_character": "Upward movement with frequent overlap \u2014 be cautious"
+  },
   "previous_day": {
     "pdh": 24370.25,
     "pdl": 24109.45,
