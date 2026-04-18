@@ -3,7 +3,10 @@ name: Update Phase‑2 Snapshot
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/15 * * * *"   # every 15 minutes (adjust later)
+    - cron: "*/15 * * * *"   # every 15 minutes
+
+permissions:
+  contents: write   # ✅ REQUIRED to allow git push
 
 jobs:
   build:
