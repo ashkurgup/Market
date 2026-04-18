@@ -139,58 +139,179 @@ def detect_swings(df, side, mode):
 
     return swings
 
-# ==============================
-# KEY LEVELS (FINAL)
-# ==============================
+# ============================================================
+# SUPPORT / RESISTANCE ENGINE – FINAL
+# ============================================================
 
-def compute_key_levels(price, weekly):
-    resistance = None
-    support = None
+MAX_GAP_POINTS = 300
+FLIP_DISTANCE = 50
+FLIP_15M_CANDLES = 3
 
-    # ---- WEEKLY (Strong) ----
-    if weekly["previous_week_high"] and weekly["previous_week_high"] > price:
-        resistance = {
+
+def count_respects(df_5m, level, lookback=500):
+    """
+    Count meaningful respects:
+    touch/breach followed by rejection >= 30 points
+    """
+    respects = 0
+    recent = df_5m.tail(lookback)
+
+    for i in range(1, len(recent) - 1):
+        price = recent["close"].iloc[i]
+        prev = recent["close"].iloc[i - 1]
+        nxt = recent["close"].iloc[i + 1]
+
+        if abs(price - level) <= 10:
+            if (nxt - price) >= 30 or (price - nxt) >= 30:
+                respects += 1
+
+    return respects
+
+
+def detect_structural_levels(df_tf, side, is_high=True):
+    """
+    Swing detection (safe, non-ambiguous)
+    """
+    swings = []
+    series = df_tf["high"] if is_high else df_tf["low"]
+
+    for i in range(side, len(df_tf) - side):
+        center = float(series.iloc[i])
+        left = series.iloc[i - side:i].to_numpy()
+        right = series.iloc[i + 1:i + side + 1].to_numpy()
+
+        if is_high and center > left.max() and center > right.max():
+            swings.append(center)
+
+        if not is_high and center < left.min() and center < right.min():
+            swings.append(center)
+
+    return list(set(swings))  # uniqueness
+
+
+def evaluate_role_flip(df_15m, level, role):
+    """
+    Support ↔ Resistance flip logic
+    """
+    closes = df_15m["close"].to_numpy()
+
+    if role == "support":
+        if closes[-1] < level - FLIP_DISTANCE:
+            return "resistance"
+
+        if all(c < level for c in closes[-FLIP_15M_CANDLES:]):
+            return "resistance"
+
+    if role == "resistance":
+        if closes[-1] > level + FLIP_DISTANCE:
+            return "support"
+
+        if all(c > level for c in closes[-FLIP_15M_CANDLES:]):
+            return "support"
+
+    return role
+
+
+def compute_support_resistance(current_price, weekly, df_5m):
+    """
+    FINAL Support / Resistance Engine
+    """
+
+    eligible_resistance = []
+    eligible_support = []
+
+    # ---- WEEKLY (always eligible, Strong)
+    if weekly["previous_week_high"]:
+        eligible_resistance.append({
             "price": weekly["previous_week_high"],
-            "strength": "Strong",
-            "source": "Weekly High"
-        }
+            "strong": True
+        })
 
-    if weekly["previous_week_low"] and weekly["previous_week_low"] < price:
-        support = {
+    if weekly["previous_week_low"]:
+        eligible_support.append({
             "price": weekly["previous_week_low"],
-            "strength": "Strong",
-            "source": "Weekly Low"
-        }
+            "strong": True
+        })
 
-    # ---- 4H (Strong) ----
-    df4 = fetch_ohlc("4h", LOOKBACK_4H_DAYS)
-    r4 = detect_swings(df4, 2, "high")
-    s4 = detect_swings(df4, 2, "low")
+    # ---- 4H STRUCTURE (Strong)
+    df_4h = fetch_ohlc("4h", LOOKBACK_4H_DAYS)
 
-    for p in sorted(r4):
-        if p > price and resistance is None:
-            resistance = {"price": p, "strength": "Strong", "source": "4H Structure"}
+    for p in detect_structural_levels(df_4h, side=2, is_high=True):
+        if count_respects(df_5m, p) >= 2:
+            eligible_resistance.append({"price": p, "strong": True})
 
-    for p in sorted(s4, reverse=True):
-        if p < price and support is None:
-            support = {"price": p, "strength": "Strong", "source": "4H Structure"}
+    for p in detect_structural_levels(df_4h, side=2, is_high=False):
+        if count_respects(df_5m, p) >= 2:
+            eligible_support.append({"price": p, "strong": True})
 
-    # ---- 1H (Moderate) ----
-    df1 = fetch_ohlc("1h", LOOKBACK_1H_DAYS)
-    r1 = detect_swings(df1, 3, "high")
-    s1 = detect_swings(df1, 3, "low")
+    # ---- 1H STRUCTURE (Eligible, may or may not be strong)
+    df_1h = fetch_ohlc("1h", LOOKBACK_1H_DAYS)
 
-    for p in sorted(r1):
-        if p > price and resistance is None:
-            resistance = {"price": p, "strength": "Moderate", "source": "1H Structure"}
+    for p in detect_structural_levels(df_1h, side=3, is_high=True):
+        respects = count_respects(df_5m, p)
+        if respects >= 2:
+            eligible_resistance.append({"price": p, "strong": respects >= 3})
 
-    for p in sorted(s1, reverse=True):
-        if p < price and support is None:
-            support = {"price": p, "strength": "Moderate", "source": "1H Structure"}
+    for p in detect_structural_levels(df_1h, side=3, is_high=False):
+        respects = count_respects(df_5m, p)
+        if respects >= 2:
+            eligible_support.append({"price": p, "strong": respects >= 3})
+
+    # ---- SORT BY DISTANCE
+    eligible_resistance = sorted(
+        eligible_resistance, key=lambda x: abs(x["price"] - current_price)
+    )
+    eligible_support = sorted(
+        eligible_support, key=lambda x: abs(x["price"] - current_price)
+    )
+
+    # ---- APPLY 300 POINT GAP RULE
+    def build_levels(levels, direction):
+        result = []
+        last_price = current_price
+
+        for lvl in levels:
+            gap = abs(lvl["price"] - last_price)
+            if gap > MAX_GAP_POINTS and result:
+                continue
+
+            result.append(lvl)
+            last_price = lvl["price"]
+
+        return result
+
+    resistance_levels = build_levels(
+        [l for l in eligible_resistance if l["price"] > current_price], "resistance"
+    )
+
+    support_levels = build_levels(
+        [l for l in eligible_support if l["price"] < current_price], "support"
+    )
+
+    # ---- ROLE STABILITY CHECK (15m)
+    df_15m = df_5m.set_index("timestamp").resample("15T").last().dropna()
+
+    if resistance_levels:
+        for lvl in resistance_levels:
+            lvl["role"] = evaluate_role_flip(df_15m, lvl["price"], "resistance")
+
+    if support_levels:
+        for lvl in support_levels:
+            lvl["role"] = evaluate_role_flip(df_15m, lvl["price"], "support")
+
+    # ---- FINAL FORMAT FOR UI
+    def format_levels(levels):
+        out = []
+        for l in levels:
+            if l["strong"]:
+                out.append(f'{l["price"]:.2f} (Strong)')
+            else:
+                out.append(f'{l["price"]:.2f}')
+        return out
 
     return {
-        "nearest_resistance": resistance,
-        "nearest_support": support
+        "resistance": format_levels(resistance_levels),
+        "support": format_levels(support_levels)
     }
 
 # ==============================
