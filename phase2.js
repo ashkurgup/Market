@@ -6,102 +6,30 @@ async function loadPhase2() {
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
 
-    console.log("✅ Phase‑2 data (raw):", data);
-    console.log("✅ Phase‑2 keys:", Object.keys(data));
+    console.log("✅ Phase‑2 data:", data);
 
-    /* ===== Header ===== */
-    if (data.computed_at) {
-      renderLastUpdated(data.computed_at);
-    }
+    renderLastUpdated(data.computed_at);
 
-    /* ===== Phase‑2 Cards ===== */
-    renderKeyLevels(data.key_levels || null);
-    renderSessionLevels(data.session_levels || null);
-    renderStructureEvents(data.structure_events || []);
+    renderTrendArchitect1300(data.trend_architect_1300);
+    renderStructuralBiasFromTA(data.trend_architect_1300);
 
-    /* ===== Trend Architect (13:00) ===== */
-    const ta1300 =
-      data.trend_architect_1300 ||
-      data.trendArchitect1300 ||
-      data.trend_architect ||
-      null;
+    renderMomentumEvents(data.momentum_events);
 
-    console.log("✅ Bound Trend Architect @13:00:", ta1300);
+    renderGlobalIndices(data.global_indices);
 
-    renderTrendArchitect1300(ta1300);
-    renderStructuralBiasFromTA(ta1300);
+    renderPreMarketGlobalBias(data.premarket_global_bias);
 
   } catch (err) {
     console.error("❌ Phase‑2 load failed:", err);
   }
 }
 
-/* ================= META ================= */
+/* ================= LAST UPDATED ================= */
 
 function renderLastUpdated(ts) {
   const el = document.getElementById("phase2-last-updated");
   if (!el || !ts) return;
-  el.innerText = "Last updated: " + new Date(ts).toLocaleString("en-IN");
-}
-
-/* ================= KEY LEVELS ================= */
-
-function renderKeyLevels(k) {
-  const el = document.querySelector("#key-levels .content");
-  if (!el || !k) {
-    el.innerHTML = "<em>No data</em>";
-    return;
-  }
-
-  const r = k.resistance || [];
-  const s = k.support || [];
-
-  let html = "<div class='line'><em>Resistance:</em></div>";
-  r.length
-    ? r.forEach(v => html += `<div style="margin-left:12px;"><strong>${v}</strong></div>`)
-    : html += "<div style='margin-left:12px;'>—</div>";
-
-  html += "<div class='line' style='margin-top:6px;'><em>Support:</em></div>";
-  s.length
-    ? s.forEach(v => html += `<div style="margin-left:12px;"><strong>${v}</strong></div>`)
-    : html += "<div style='margin-left:12px;'>—</div>";
-
-  el.innerHTML = html;
-}
-
-/* ================= SESSION ================= */
-
-function renderSessionLevels(s) {
-  const el = document.querySelector("#session-levels .content");
-  if (!el || !s || s.high == null || s.low == null) {
-    el.innerHTML = "<em>No data</em>";
-    return;
-  }
-
-  el.innerHTML = `
-    <div><em>High:</em> <strong>${s.high.toFixed(2)}</strong></div>
-    <div><em>Low:</em> <strong>${s.low.toFixed(2)}</strong></div>
-  `;
-}
-
-/* ================= STRUCTURE EVENTS ================= */
-
-function renderStructureEvents(events) {
-  const el = document.querySelector("#structure-events .content");
-  if (!el || !Array.isArray(events) || events.length === 0) {
-    el.innerHTML = "<em>No events detected</em>";
-    return;
-  }
-
-  el.innerHTML = events.map(e => `
-    <div style="margin-bottom:8px;">
-      <strong>${e.event} ${e.direction}</strong><br>
-      Structure: ${e.structure}<br>
-      Level: ${e.level}<br>
-      Detection: ${e.confirmed_by}<br>
-      Time: ${new Date(e.timestamp).toLocaleTimeString("en-IN")}
-    </div>
-  `).join("<hr>");
+  el.innerText = "Last updated: " + new Date(ts).toLocaleTimeString("en-IN");
 }
 
 /* ================= TREND ARCHITECT ================= */
@@ -110,70 +38,107 @@ function renderTrendArchitect1300(t) {
   const el = document.querySelector("#trend-architect-1300 .content");
   if (!el) return;
 
-  if (!t || !t.major_candle || !t.distance_travelled) {
-    el.innerHTML = "<em>Waiting for Trend Architect snapshot…</em>";
+  if (!t) {
+    el.innerHTML = "<em>No data</em>";
     return;
   }
 
   el.innerHTML = `
-    <div class="trend-row">
-      <span class="trend-label">Major Candle:</span>
-      <span class="trend-value">
-        ${t.major_candle.range} pts (${t.major_candle.type}) @ ${t.major_candle.time}
-      </span>
-    </div>
-    <div class="trend-row">
-      <span class="trend-label">Next Candle:</span>
-      <span class="trend-value">${t.next_candle.relation}</span>
-    </div>
-    <div class="trend-row">
-      <span class="trend-label">Total Distance:</span>
-      <span class="trend-value">
-        ${t.distance_travelled.points} pts |
-        Overlaps: ${t.distance_travelled.overlaps} |
-        Small candles: ${t.distance_travelled.small_candles}
-      </span>
-    </div>
-    <div class="trend-row">
-      <span class="trend-label">Market Character:</span>
-      <span class="trend-value">${t.market_character}</span>
-    </div>
+    <div><strong>Major Candle:</strong> ${t.major_candle.range} pts @ ${t.major_candle.time}</div>
+    <div><strong>Distance:</strong> ${t.distance_travelled.points} pts</div>
+    <div><strong>Overlaps:</strong> ${t.distance_travelled.overlaps}</div>
+    <div><strong>Small candles:</strong> ${t.distance_travelled.small_candles}</div>
+    <div><strong>Market Character:</strong> ${t.market_character}</div>
   `;
 }
 
 /* ================= STRUCTURAL BIAS ================= */
 
-function renderStructuralBiasFromTA(trend) {
+function renderStructuralBiasFromTA(t) {
   const el = document.querySelector("#structural-bias .content");
-  if (!el) return;
+  if (!el || !t) return;
 
-  if (!trend || !trend.market_character) {
-    el.innerHTML = "<em>Not evaluated</em>";
+  let value = "All ⚪ — Stay contextual only";
+
+  if (t.market_character.includes("frequent overlap")) {
+    value = "4H 🟢 / 1H 🟢 / 15m ⚪ — Pullback phase";
+  } else if (t.market_character.includes("Steady move")) {
+    value = "4H 🟢 / 1H 🟢 / 15m 🟢 — Clean trend";
+  }
+
+  el.innerHTML = `<strong style="color:#000;">${value}</strong>`;
+}
+
+/* ================= MOMENTUM EVENTS ================= */
+
+function renderMomentumEvents(events) {
+  const el = document.querySelector("#momentum-events .content");
+  if (!el || !Array.isArray(events) || events.length === 0) {
+    el.innerHTML = "<em>No momentum events detected</em>";
     return;
   }
 
-  let label = "Structural Bias:";
-  let value = "";
+  el.innerHTML = events.map(e => {
+    let color = "#999";
+    if (e.severity === "High") color = "#e74c3c";
+    if (e.severity === "Medium") color = "#f39c12";
+    if (e.severity === "Low") color = "#2ecc71";
 
-  if (
-    trend.market_character.includes("Upward") &&
-    trend.market_character.includes("overlap")
-  ) {
-    value = "4H 🟢 / 1H 🟢 / 15m ⚪ — Pullback phase";
-  } else if (trend.market_character.includes("Steady move")) {
-    value = "4H 🟢 / 1H 🟢 / 15m 🟢 — Clean trend";
-  } else {
-    value = "All ⚪ — Stay contextual only";
-  }
-
-  el.innerHTML = `
-    <div class="structural-bias-text">
-      <span class="structural-bias-label">${label}</span>
-      <span class="structural-bias-value">${value}</span>
-    </div>
-  `;
+    return `
+      <div style="margin-bottom:6px;">
+        <strong>${e.description}</strong><br>
+        <span style="color:${color}; font-size:11px;">
+          ${e.severity} • ${new Date(e.timestamp).toLocaleTimeString("en-IN")}
+        </span>
+      </div>
+    `;
+  }).join("");
 }
 
-/* ================= INIT ================= */
+/* ================= GLOBAL INDICES ================= */
 
-document.addEventListener("DOMContentLoaded", loadPhase2);
+function renderGlobalIndices(indices) {
+  const el = document.querySelector("#global-indices .content");
+  if (!el || !Array.isArray(indices) || indices.length === 0) {
+    el.innerHTML = "<em>No data</em>";
+    return;
+  }
+
+  el.innerHTML = indices.map(i => {
+    const pctColor = i.pct_change_30m >= 0 ? "#2ecc71" : "#e74c3c";
+    const sign = i.pct_change_30m >= 0 ? "+" : "";
+    const square = i.is_open
+      ? "<span style='color:#2ecc71;'>■</span>"
+      : "<span style='color:#e74c3c;'>■</span>";
+
+    return `
+      <div style="margin-bottom:6px;">
+        ${square}
+        <strong style="margin-left:6px;">${i.name}</strong>
+        <span style="color:${pctColor}; margin-left:6px;">
+          ${sign}${i.pct_change_30m}%
+        </span>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ================= PRE‑MARKET GLOBAL BIAS ================= */
+
+function renderPreMarketGlobalBias(value) {
+  const el = document.getElementById("premarket-global-bias");
+  if (!el || typeof value !== "number") return;
+
+  let color = "#999";
+  if (value <= 2) color = "#e74c3c";
+  else if (value <= 4) color = "#f39c12";
+  else if (value <= 7) color = "#2ecc71";
+  else color = "#27ae60";
+
+  el.innerHTML = `
+    <div style="font-size:12px;color:#777;margin-bottom:4px;">
+      Pre‑Market Global Bias
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;height:10px;background:#eee;border-radius:5px;">
+        <
