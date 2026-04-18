@@ -29,7 +29,8 @@ async function loadPhase2() {
     console.log("✅ Bound Trend Architect @13:00:", ta1300);
 
     renderTrendArchitect1300(ta1300);
-
+renderStructuralBiasFromTA(ta1300);
+    
   } catch (err) {
     console.error("❌ Phase‑2 load failed:", err);
   }
