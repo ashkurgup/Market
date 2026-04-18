@@ -26,11 +26,27 @@ def load_ohlcv():
 def compute_weekly_levels(df):
     df["week"] = df["timestamp"].dt.to_period("W")
 
-    current_week = datetime.now(IST).date().isocalendar().week
+    current_week = datetime.now(IST).isocalendar()[1]
     completed = df[df["timestamp"].dt.isocalendar().week < current_week]
+
+    if completed.empty:
+        return {
+            "previous_week_high": None,
+            "previous_week_low": None,
+            "week_start": None,
+            "week_end": None
+        }
 
     last_week = completed["week"].max()
     week_df = completed[completed["week"] == last_week]
+
+    if week_df.empty:
+        return {
+            "previous_week_high": None,
+            "previous_week_low": None,
+            "week_start": None,
+            "week_end": None
+        }
 
     return {
         "previous_week_high": float(week_df["high"].max()),
