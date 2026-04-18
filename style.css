@@ -96,3 +96,21 @@ h3 {
   font-size: 11px;
   text-align: center;
 }
+/* =========================
+   Manual Reference Styling
+   ========================= */
+
+/* Light grey tone for manually seeded data */
+.manual {
+  color: #9aa0a6;       /* Light grey text */
+}
+
+/* Slightly dim headings to signal reference-only */
+.card.manual h3 {
+  color: #9aa0a6;
+}
+
+/* Keep values readable but subdued */
+.card.manual .value {
+  color: #b0b6bb;
+}
