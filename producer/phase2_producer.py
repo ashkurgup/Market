@@ -52,7 +52,7 @@ def fetch_intraday_5m(days=5):
 def compute_trend_architect_1300(day_df, previous):
     current_time = now_ist().time()
 
-    # ✅ If frozen value already exists, respect freeze
+    # Freeze after 13:00 if already computed
     if current_time > time(13, 0) and "trend_architect_1300" in previous:
         return previous["trend_architect_1300"]
 
@@ -61,11 +61,10 @@ def compute_trend_architect_1300(day_df, previous):
         (day_df.index.time <= min(current_time, time(13, 0)))
     ]
 
-    # ✅ NEW: allow fallback compute after 13:00
+    # fallback if insufficient candles
     if len(win) < 6:
         return previous.get("trend_architect_1300")
 
-    # --- SAME LOGIC BELOW (unchanged)
     win = win.copy()
     win["body"] = (win["close"] - win["open"]).abs()
 
@@ -78,7 +77,6 @@ def compute_trend_architect_1300(day_df, previous):
     for i in range(1, len(win)):
         p = win.iloc[i - 1]
         c = win.iloc[i]
-
         bp = sorted([p["open"], p["close"]])
         bc = sorted([c["open"], c["close"]])
         overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
@@ -121,7 +119,64 @@ def compute_trend_architect_1300(day_df, previous):
         "market_character": mc,
         "computed_at": now_ist().isoformat()
     }
-    
+
+# ==============================
+# MOMENTUM EVENTS (5m)
+# ==============================
+
+def detect_momentum_events_5m(df_5m):
+    events = []
+
+    if len(df_5m) < 40:
+        return events
+
+    recent = df_5m.tail(40)
+
+    avg_body = (recent["close"] - recent["open"]).abs().mean()
+    avg_range = (recent["high"] - recent["low"]).mean()
+    avg_vol = recent["volume"].mean()
+
+    last = recent.iloc[-1]
+    prev = recent.iloc[-2]
+
+    body = abs(last["close"] - last["open"])
+    rng = last["high"] - last["low"]
+    wick_ratio = 1 - (body / rng if rng > 0 else 1)
+
+    ts = last.name.isoformat()
+
+    # Strong impulse
+    if body >= 1.4 * avg_body and body >= 0.65 * rng:
+        if last["close"] > last["open"]:
+            events.append(("BullishImpulse", "Strong bullish 5m impulse candle", ts))
+        else:
+            events.append(("BearishImpulse", "Strong bearish 5m impulse candle", ts))
+
+    # High volume breakout
+    if last["volume"] >= 1.7 * avg_vol and rng >= avg_range:
+        events.append(("HighVolumeBreakout", "High‑volume breakout detected (5m)", ts))
+
+    # Exhaustion
+    if body >= avg_body and wick_ratio >= 0.6:
+        events.append(("Exhaustion", "Momentum exhaustion candle (5m)", ts))
+
+    # Continuation
+    if last["close"] > last["open"] and prev["close"] > prev["open"] and last["close"] > prev["high"]:
+        events.append(("BullishContinuation", "Bullish momentum continuation", ts))
+
+    if last["close"] < last["open"] and prev["close"] < prev["open"] and last["close"] < prev["low"]:
+        events.append(("BearishContinuation", "Bearish momentum continuation", ts))
+
+    # Failed breakout
+    if rng >= avg_range and wick_ratio >= 0.6:
+        events.append(("FailedBreakout", "Failed breakout – momentum rejection", ts))
+
+    # Expansion without follow‑through
+    if rng >= 1.5 * avg_range and abs(prev["close"] - last["close"]) < 0.3 * rng:
+        events.append(("NoFollowThrough", "Expansion without follow‑through", ts))
+
+    return events
+
 # ==============================
 # MAIN
 # ==============================
@@ -132,24 +187,47 @@ def run_phase2():
         with open(SNAPSHOT_PATH, "r") as f:
             previous = json.load(f)
 
-    df = fetch_intraday_5m()
-    day_groups = df.groupby(df.index.date)
-    valid_days = [d for d, g in day_groups if len(g) >= 10]
+    df5 = fetch_intraday_5m(days=5)
 
+    # Latest trading day
+    day_groups = df5.groupby(df5.index.date)
+    valid_days = [d for d, g in day_groups if len(g) >= 10]
     if not valid_days:
         return
 
     last_day = valid_days[-1]
     day_df = day_groups.get_group(last_day)
 
+    # Trend Architect
     ta_1300 = compute_trend_architect_1300(day_df, previous)
+
+    # Momentum Events (intraday, reset @ 08:40)
+    now = now_ist()
+    prev_events = previous.get("momentum_events", [])
+
+    if now.time() >= time(8, 40):
+        prev_events = []
+
+    raw_events = detect_momentum_events_5m(day_df)
+
+    for etype, desc, ts in raw_events:
+        if not any(e["timestamp"] == ts and e["type"] == etype for e in prev_events):
+            prev_events.append({
+                "type": etype,
+                "timeframe": "5m",
+                "description": desc,
+                "timestamp": ts
+            })
+
+    momentum_events = prev_events[-5:]
 
     snapshot = previous.copy()
     snapshot.update({
         "phase": 2,
         "symbol": "NIFTY",
         "trend_architect_1300": ta_1300,
-        "computed_at": now_ist().isoformat()
+        "momentum_events": momentum_events,
+        "computed_at": now.isoformat()
     })
 
     with open(SNAPSHOT_PATH, "w") as f:
