@@ -97,20 +97,23 @@ h3 {
   text-align: center;
 }
 /* =========================
-   Manual Reference Styling
+   Manual Reference Cards
    ========================= */
 
-/* Light grey tone for manually seeded data */
-.manual {
-  color: #9aa0a6;       /* Light grey text */
+/* Light grey background for manually seeded reference data */
+.card.manual {
+  background-color: #f5f6f7;           /* Light grey (box) */
+  border: 2px solid #e0e0e0;            /* Subtle border */
 }
 
-/* Slightly dim headings to signal reference-only */
+/* Keep text normal and readable */
+.card.manual .value,
+.card.manual .line,
+.card.manual .small {
+  color: #333;
+}
+
+/* Slightly muted header to indicate reference */
 .card.manual h3 {
-  color: #9aa0a6;
-}
-
-/* Keep values readable but subdued */
-.card.manual .value {
-  color: #b0b6bb;
+  color: #7a7a7a;
 }
