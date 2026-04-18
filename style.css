@@ -128,3 +128,40 @@ h3 {
   color: #d93025;   /* same red used elsewhere */
   font-weight: 600;
 }
+/* =========================
+   Card Density & Height Fix
+   ========================= */
+
+/* Reduce overall card padding */
+.card {
+  padding: 14px 16px;            /* was larger before */
+  min-height: unset;             /* remove forced height */
+}
+
+/* Tighten header spacing */
+.card h3 {
+  margin-bottom: 10px;
+}
+
+/* Tighten value spacing */
+.card .value {
+  margin-bottom: 6px;
+  line-height: 1.1;
+}
+
+/* Remove extra gaps between lines */
+.card .line {
+  margin-bottom: 4px;
+}
+
+/* Reduce small text spacing */
+.card .small {
+  margin-top: 2px;
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+/* Ensure equal look across cards in grid */
+.grid {
+  align-items: stretch;          /* cards fill row evenly */
+}
