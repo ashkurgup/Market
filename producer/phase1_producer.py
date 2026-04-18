@@ -158,10 +158,10 @@ if not previous.get("trend_architect"):
         }
 
 # ============================================================
-# INSTITUTIONAL FLOWS (Moneycontrol — JSON, CI‑SAFE)
+# INSTITUTIONAL FLOWS (Moneycontrol — FINAL, CI‑SAFE)
 # ============================================================
 try:
-    mc_url = "https://www.moneycontrol.com/mc/widget/fii_dii_data?type=0"
+    mc_url = "https://www.moneycontrol.com/stocks/marketstats/fii_dii_activity/homepage/json"
     mc = requests.get(mc_url, timeout=10).json()
 
     rows = mc.get("data", [])
@@ -169,10 +169,10 @@ try:
         # rows are latest-first
         latest = rows[0]
 
-        as_of = latest.get("date")
+        as_of = latest["date"]  # e.g., "17-Apr-2026"
 
-        fii_vals = [float(r.get("fii", 0)) for r in rows[:4]]
-        dii_vals = [float(r.get("dii", 0)) for r in rows[:4]]
+        fii_vals = [float(r["fii"]) for r in rows[:4]]
+        dii_vals = [float(r["dii"]) for r in rows[:4]]
 
         previous["institutional_flows"] = {
             "as_of": as_of,
@@ -192,9 +192,8 @@ try:
             }
         }
 except Exception:
-    # Holiday / endpoint down → keep last snapshot
+    # Network / holiday / site issue → keep last stored flows
     pass
-``
 
 # ============================================================
 # PCR (NSE Option Chain JSON) — SAFE FALLBACK
