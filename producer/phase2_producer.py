@@ -219,7 +219,8 @@ def run_phase2():
     if df is None:
         return
 
-    day = sorted(df.groupby(df.index.date).keys())[-1]
+    # ✅ FIXED: get latest trading day correctly
+    day = df.index.date.max()
     day_df = df[df.index.date == day]
 
     trend_architect = compute_trend_architect_1300(day_df, previous)
