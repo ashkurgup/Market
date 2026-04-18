@@ -100,20 +100,31 @@ h3 {
    Manual Reference Cards
    ========================= */
 
-/* Light grey background for manually seeded reference data */
+/* Very light grey background (reference-only) */
 .card.manual {
-  background-color: #f5f6f7;           /* Light grey (box) */
-  border: 2px solid #e0e0e0;            /* Subtle border */
+  background-color: #fafafa;        /* lighter than previous */
+  border: 2px solid #ff8c3a;        /* same accent as VWAP */
 }
 
-/* Keep text normal and readable */
+/* Keep text fully readable */
 .card.manual .value,
 .card.manual .line,
 .card.manual .small {
   color: #333;
 }
 
-/* Slightly muted header to indicate reference */
+/* Header slightly muted, but readable */
 .card.manual h3 {
-  color: #7a7a7a;
+  color: #6f6f6f;
+}
+
+/* Positive / Negative flow colors */
+.card.manual .green {
+  color: #1aa260;   /* same green used elsewhere */
+  font-weight: 600;
+}
+
+.card.manual .red {
+  color: #d93025;   /* same red used elsewhere */
+  font-weight: 600;
 }
