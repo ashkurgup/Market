@@ -151,18 +151,23 @@ FLIP_15M_CANDLES = 3
 def count_respects(df_5m, level, lookback=500):
     """
     Count meaningful respects:
-    touch/breach followed by rejection >= 30 points
+    - price touches level
+    - then rejects by >= 30 points
     """
+
     respects = 0
     recent = df_5m.tail(lookback)
 
-    for i in range(1, len(recent) - 1):
-        price = recent["close"].iloc[i]
-        prev = recent["close"].iloc[i - 1]
-        nxt = recent["close"].iloc[i + 1]
+    level = float(level)
 
+    for i in range(1, len(recent) - 1):
+        price = float(recent["close"].iloc[i])
+        next_price = float(recent["close"].iloc[i + 1])
+
+        # touch / near-touch
         if abs(price - level) <= 10:
-            if (nxt - price) >= 30 or (price - nxt) >= 30:
+            # rejection
+            if abs(next_price - price) >= 30:
                 respects += 1
 
     return respects
