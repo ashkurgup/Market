@@ -15,12 +15,18 @@ IST = pytz.timezone("Asia/Kolkata")
 LOOKBACK_4H_DAYS = 70
 LOOKBACK_1H_DAYS = 22
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
-
 MAX_GAP_POINTS = 300
 ACCEPTANCE_POINTS = 20
 ACCEPTANCE_1M_CANDLES = 3
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
+
+# ==============================
+# STRUCTURE EVENT STATE (DEDUP)
+# ==============================
+
+LAST_STRUCTURE_EVENT = {}
 
 # ==============================
 # DATA FETCH
@@ -50,12 +56,12 @@ def fetch_ohlc(interval, days):
     return df
 
 # ==============================
-# WEEKLY LEVELS
+# WEEKLY LEVELS (FRIDAY CLOSE)
 # ==============================
 
 def compute_weekly_levels(df):
     df = df.copy()
-    df["weekday"] = df["timestamp"].dt.weekday
+    df["weekday"] = df["timestamp"].dt.weekday  # Mon=0, Fri=4
 
     fridays = df[df["weekday"] == 4]
     if fridays.empty:
@@ -196,7 +202,7 @@ def compute_support_resistance(price, weekly, df_5m):
     }
 
 # ==============================
-# BOS / CHOCH (1m acceptance)
+# BOS / CHOCH (5m structure, 1m acceptance)
 # ==============================
 
 def detect_5m_structure(df5):
@@ -217,15 +223,23 @@ def detect_5m_structure(df5):
 
 def accept_1m(df1, level, direction):
     closes = df1["close"].to_numpy()
+    times = df1["timestamp"].to_numpy()
+
     if direction == "up":
-        return max(closes) >= level + ACCEPTANCE_POINTS or all(
-            c > level for c in closes[-ACCEPTANCE_1M_CANDLES:]
-        )
+        idx = closes.argmax()
+        if closes[idx] >= level + ACCEPTANCE_POINTS:
+            return True, times[idx], f"1m displacement +{int(closes[idx]-level)} pts"
+        if all(c > level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
+            return True, times[-1], "3x 1m closes"
+
     if direction == "down":
-        return min(closes) <= level - ACCEPTANCE_POINTS or all(
-            c < level for c in closes[-ACCEPTANCE_1M_CANDLES:]
-        )
-    return False
+        idx = closes.argmin()
+        if closes[idx] <= level - ACCEPTANCE_POINTS:
+            return True, times[idx], f"1m displacement +{int(level-closes[idx])} pts"
+        if all(c < level for c in closes[-ACCEPTANCE_1M_CANDLES:]):
+            return True, times[-1], "3x 1m closes"
+
+    return False, None, None
 
 
 def detect_bos_choch(df5, df1, key_levels):
@@ -235,22 +249,68 @@ def detect_bos_choch(df5, df1, key_levels):
         return events
 
     stype, sprice = struct
-    levels = [float(v.split()[0]) for side in key_levels.values() for v in side]
+    structural_lvls = [float(v.split()[0]) for side in key_levels.values() for v in side]
 
-    if not any(abs(sprice - l) <= 50 for l in levels):
+    if not any(abs(sprice - lvl) <= 50 for lvl in structural_lvls):
         return events
 
-    if stype in ["LH", "HH"] and accept_1m(df1, sprice, "up"):
-        events.append({"event": "BoS", "direction": "Up", "level": sprice})
+    def emit_id(evt, dirn):
+        return f"{evt}|{dirn}|{stype}|{int(sprice)}"
 
-    if stype in ["HL", "LL"] and accept_1m(df1, sprice, "down"):
-        events.append({"event": "BoS", "direction": "Down", "level": sprice})
+    def already(evt, dirn):
+        return LAST_STRUCTURE_EVENT.get(emit_id(evt, dirn), False)
 
-    if stype == "LH" and accept_1m(df1, sprice, "up"):
-        events.append({"event": "ChoCH", "direction": "Up", "level": sprice})
+    if stype in ["LH", "HH"] and not already("BoS", "Up"):
+        ok, ts, why = accept_1m(df1, sprice, "up")
+        if ok:
+            LAST_STRUCTURE_EVENT[emit_id("BoS", "Up")] = True
+            events.append({
+                "event": "BoS",
+                "direction": "Up",
+                "structure": stype,
+                "level": round(sprice, 2),
+                "confirmed_by": why,
+                "timestamp": str(ts)
+            })
 
-    if stype == "HL" and accept_1m(df1, sprice, "down"):
-        events.append({"event": "ChoCH", "direction": "Down", "level": sprice})
+    if stype in ["HL", "LL"] and not already("BoS", "Down"):
+        ok, ts, why = accept_1m(df1, sprice, "down")
+        if ok:
+            LAST_STRUCTURE_EVENT[emit_id("BoS", "Down")] = True
+            events.append({
+                "event": "BoS",
+                "direction": "Down",
+                "structure": stype,
+                "level": round(sprice, 2),
+                "confirmed_by": why,
+                "timestamp": str(ts)
+            })
+
+    if stype == "LH" and not already("ChoCH", "Up"):
+        ok, ts, why = accept_1m(df1, sprice, "up")
+        if ok:
+            LAST_STRUCTURE_EVENT[emit_id("ChoCH", "Up")] = True
+            events.append({
+                "event": "ChoCH",
+                "direction": "Up",
+                "structure": "LH break",
+                "level": round(sprice, 2),
+                "confirmed_by": why,
+                "timestamp": str(ts)
+            })
+
+    if stype == "HL" and not already("ChoCH", "Down"):
+        ok, ts, why = accept_1m(df1, sprice, "down")
+        if ok:
+            LAST_STRUCTURE_EVENT[emit_id("ChoCH", "Down")] = True
+            events.append({
+                "event": "ChoCH",
+                "direction": "Down",
+                "structure": "HL break",
+                "level": round(sprice, 2),
+                "confirmed_by": why,
+                "timestamp": str(ts)
+            })
 
     return events
 
@@ -259,8 +319,6 @@ def detect_bos_choch(df5, df1, key_levels):
 # ==============================
 
 def run_phase2_producer():
-    print(">>> Phase‑2 producer started")
-
     df5 = fetch_ohlc("5m", 7)
     df1 = fetch_ohlc("1m", 2)
 
@@ -287,8 +345,6 @@ def run_phase2_producer():
 
     with open(SNAPSHOT_PATH, "w") as f:
         json.dump(snapshot, f, indent=2)
-
-    print(">>> Phase‑2 snapshot written successfully")
 
 
 if __name__ == "__main__":
