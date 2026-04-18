@@ -14,12 +14,12 @@ async function loadPhase2() {
       renderLastUpdated(data.computed_at);
     }
 
-    /* ===== Phase‑2 Boxes ===== */
+    /* ===== Phase‑2 Cards ===== */
     renderKeyLevels(data.key_levels || null);
     renderSessionLevels(data.session_levels || null);
     renderStructureEvents(data.structure_events || []);
 
-    /* ===== Trend Architect (13:00 Snapshot) ===== */
+    /* ===== Trend Architect (13:00) ===== */
     const ta1300 =
       data.trend_architect_1300 ||
       data.trendArchitect1300 ||
@@ -29,8 +29,8 @@ async function loadPhase2() {
     console.log("✅ Bound Trend Architect @13:00:", ta1300);
 
     renderTrendArchitect1300(ta1300);
-renderStructuralBiasFromTA(ta1300);
-    
+    renderStructuralBiasFromTA(ta1300);
+
   } catch (err) {
     console.error("❌ Phase‑2 load failed:", err);
   }
@@ -56,30 +56,20 @@ function renderKeyLevels(k) {
   const r = k.resistance || [];
   const s = k.support || [];
 
-  let html = "";
-
-  html += "<div class='line'><em>Resistance:</em></div>";
-  if (r.length) {
-    r.forEach(v => {
-      html += `<div style="margin-left:12px;"><strong>${v}</strong></div>`;
-    });
-  } else {
-    html += "<div style='margin-left:12px;'>—</div>";
-  }
+  let html = "<div class='line'><em>Resistance:</em></div>";
+  r.length
+    ? r.forEach(v => html += `<div style="margin-left:12px;"><strong>${v}</strong></div>`)
+    : html += "<div style='margin-left:12px;'>—</div>";
 
   html += "<div class='line' style='margin-top:6px;'><em>Support:</em></div>";
-  if (s.length) {
-    s.forEach(v => {
-      html += `<div style="margin-left:12px;"><strong>${v}</strong></div>`;
-    });
-  } else {
-    html += "<div style='margin-left:12px;'>—</div>";
-  }
+  s.length
+    ? s.forEach(v => html += `<div style="margin-left:12px;"><strong>${v}</strong></div>`)
+    : html += "<div style='margin-left:12px;'>—</div>";
 
   el.innerHTML = html;
 }
 
-/* ================= SESSION LEVELS ================= */
+/* ================= SESSION ================= */
 
 function renderSessionLevels(s) {
   const el = document.querySelector("#session-levels .content");
@@ -108,7 +98,7 @@ function renderStructureEvents(events) {
       <strong>${e.event} ${e.direction}</strong><br>
       Structure: ${e.structure}<br>
       Level: ${e.level}<br>
-      Confirmed by: ${e.confirmed_by}<br>
+      Detection: ${e.confirmed_by}<br>
       Time: ${new Date(e.timestamp).toLocaleTimeString("en-IN")}
     </div>
   `).join("<hr>");
@@ -121,7 +111,6 @@ function renderTrendArchitect1300(t) {
   if (!el) return;
 
   if (!t || !t.major_candle || !t.distance_travelled) {
-    console.warn("⚠️ Trend Architect data missing or malformed:", t);
     el.innerHTML = "<em>Waiting for Trend Architect snapshot…</em>";
     return;
   }
@@ -133,12 +122,10 @@ function renderTrendArchitect1300(t) {
         ${t.major_candle.range} pts (${t.major_candle.type}) @ ${t.major_candle.time}
       </span>
     </div>
-
     <div class="trend-row">
       <span class="trend-label">Next Candle:</span>
       <span class="trend-value">${t.next_candle.relation}</span>
     </div>
-
     <div class="trend-row">
       <span class="trend-label">Total Distance:</span>
       <span class="trend-value">
@@ -147,7 +134,6 @@ function renderTrendArchitect1300(t) {
         Small candles: ${t.distance_travelled.small_candles}
       </span>
     </div>
-
     <div class="trend-row">
       <span class="trend-label">Market Character:</span>
       <span class="trend-value">${t.market_character}</span>
@@ -155,27 +141,34 @@ function renderTrendArchitect1300(t) {
   `;
 }
 
-/* ================= STRUCTURAL BIAS (PHASE‑2) ================= */
+/* ================= STRUCTURAL BIAS ================= */
 
 function renderStructuralBiasFromTA(trend) {
   const el = document.querySelector("#structural-bias .content");
-  if (!el || !trend || !trend.market_character) return;
+  if (!el) return;
 
-  let biasText = "";
-  let color = "";
+  if (!trend || !trend.market_character) {
+    el.innerHTML = "<em>Not evaluated</em>";
+    return;
+  }
 
-  if (trend.market_character.includes("Upward") && trend.market_character.includes("overlap")) {
-    biasText = "4H 🟢 / 1H 🟢 / 15m ⚪ — Pullback phase";
-    color = "#f0ad4e"; // amber
+  let text, color;
+
+  if (
+    trend.market_character.includes("Upward") &&
+    trend.market_character.includes("overlap")
+  ) {
+    text = "4H 🟢 / 1H 🟢 / 15m ⚪ — Pullback phase";
+    color = "#f0ad4e";
   } else if (trend.market_character.includes("Steady move")) {
-    biasText = "4H 🟢 / 1H 🟢 / 15m 🟢 — Clean trend";
-    color = "#3cb371"; // green
+    text = "4H 🟢 / 1H 🟢 / 15m 🟢 — Clean trend";
+    color = "#3cb371";
   } else {
-    biasText = "All ⚪ — Stay contextual only";
+    text = "All ⚪ — Stay contextual only";
     color = "#999";
   }
 
-  el.innerHTML = `<strong style="color:${color}">${biasText}</strong>`;
+  el.innerHTML = `<strong style="color:${color}">${text}</strong>`;
 }
 
 /* ================= INIT ================= */
