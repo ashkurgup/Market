@@ -113,36 +113,51 @@ if now_ist().time() >= FREEZE and not win.empty:
     }
 
 # =========================
-# FETCH FII / DII (NSE)
+# FETCH FII / DII (STABLE SOURCE)
 # =========================
-url = "https://www.nseindia.com/api/fiicompanies"
-headers = {"User-Agent": "Mozilla/5.0"}
-raw = requests.get(url, headers=headers, timeout=10).json()
+import pandas as pd
 
-df_flow = pd.DataFrame(raw["data"])
-df_flow["date"] = pd.to_datetime(df_flow["date"])
+MC_URL = "https://www.moneycontrol.com/markets/fii-dii-data/cash/"
+tables = pd.read_html(MC_URL)
 
-df_fii = df_flow[df_flow["category"] == "FII/FPI"].sort_values("date", ascending=False)
-df_dii = df_flow[df_flow["category"] == "DII"].sort_values("date", ascending=False)
+# First table holds Cash Market Net Data
+flow_df = tables[0]
 
-today_date = df_fii.iloc[0]["date"].strftime("%Y-%m-%d")
+flow_df.columns = [
+    "date",
+    "fii_gross_buy",
+    "fii_gross_sell",
+    "fii_net",
+    "dii_gross_buy",
+    "dii_gross_sell",
+    "dii_net"
+]
 
-fii_vals = df_fii.head(4)["net"].round(2).tolist()
-dii_vals = df_dii.head(4)["net"].round(2).tolist()
+flow_df["date"] = pd.to_datetime(flow_df["date"], dayfirst=True)
+flow_df = flow_df.sort_values("date", ascending=False)
+
+# Latest completed trading day
+today_row = flow_df.iloc[0]
+as_of_date = today_row["date"].strftime("%Y-%m-%d")
+
+# Last 4 days
+last_4 = flow_df.head(4)
 
 institutional_flows = {
-    "as_of": today_date,
+    "as_of": as_of_date,
     "unit": "₹ Cr",
     "today": {
-        "fii": fii_vals[0],
-        "dii": dii_vals[0]
+        "fii": round(float(today_row["fii_net"]), 2),
+        "dii": round(float(today_row["dii_net"]), 2)
     },
     "history_4d": {
         "fii": [
-            {"day": f"Day-{i+1}", "value": fii_vals[i]} for i in range(4)
+            {"day": f"Day-{i+1}", "value": round(float(v), 2)}
+            for i, v in enumerate(last_4["fii_net"])
         ],
         "dii": [
-            {"day": f"Day-{i+1}", "value": dii_vals[i]} for i in range(4)
+            {"day": f"Day-{i+1}", "value": round(float(v), 2)}
+            for i, v in enumerate(last_4["dii_net"])
         ]
     }
 }
