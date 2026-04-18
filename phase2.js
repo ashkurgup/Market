@@ -24,9 +24,7 @@ async function loadPhase2() {
 function renderLastUpdated(ts) {
   const el = document.getElementById("phase2-last-updated");
   if (!el || !ts) return;
-
-  const dt = new Date(ts);
-  el.innerText = "Last updated: " + dt.toLocaleString("en-IN");
+  el.innerText = "Last updated: " + new Date(ts).toLocaleString("en-IN");
 }
 
 /* ================= WEEKLY LEVELS ================= */
@@ -57,13 +55,8 @@ function renderKeyLevels(k) {
   const rList = Array.isArray(k.resistance) ? k.resistance : [];
   const sList = Array.isArray(k.support) ? k.support : [];
 
-  if (rList.length === 0 && sList.length === 0) {
-    el.innerHTML = "<em>No key levels</em>";
-    return;
-  }
-
   const renderList = (label, arr) => {
-    if (arr.length === 0) {
+    if (!arr.length) {
       return `<div><em>${label}:</em> —</div>`;
     }
     return `
@@ -77,7 +70,6 @@ function renderKeyLevels(k) {
     ${renderList("Support", sList)}
   `;
 }
-
 
 /* ================= SESSION HIGH / LOW ================= */
 
@@ -98,14 +90,21 @@ function renderSessionLevels(s) {
 
 function renderStructureEvents(events) {
   const el = document.querySelector("#structure-events .content");
-  if (!el || !events || events.length === 0) {
+
+  if (!el || !Array.isArray(events) || events.length === 0) {
     el.innerHTML = "<em>No events detected</em>";
     return;
   }
 
-  el.innerHTML = events
-    .map(e => `${e.type} (${e.direction}) @ ${e.price}`)
-    .join("<br>");
+  el.innerHTML = events.map(e => `
+    <div style="margin-bottom:8px;">
+      <strong>${e.event} ${e.direction}</strong><br>
+      Structure: ${e.structure}<br>
+      Level: ${e.level}<br>
+      Confirmed by: ${e.confirmed_by}<br>
+      Time: ${new Date(e.timestamp).toLocaleTimeString("en-IN")}
+    </div>
+  `).join("<hr>");
 }
 
 /* ================= INIT ================= */
