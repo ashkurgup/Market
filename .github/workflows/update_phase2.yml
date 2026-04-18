@@ -34,4 +34,3 @@ jobs:
           git add snapshots/market_phase2.json
           git commit -m "Update market_phase2 snapshot" || echo "No changes to commit"
           git push
-``
