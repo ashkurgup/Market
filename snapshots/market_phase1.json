@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-04-17",
-    "last_updated": "11:03:44",
+    "last_updated": "11:10:45",
     "timezone": "IST"
   },
   "nifty": {
@@ -73,5 +73,7 @@
   "choppiness": {
     "state": "High",
     "message": "Expect large pullbacks"
-  }
+  },
+  "institutional_flows": null,
+  "pcr": null
 }
