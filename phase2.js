@@ -1,149 +1,175 @@
-console.log("✅ Phase‑2 JS loaded");
+import json
+import os
+import pytz
+import pandas as pd
+import yfinance as yf
+from datetime import datetime, time
 
-async function loadPhase2() {
-  try {
-    const url = "snapshots/market_phase2.json?t=" + Date.now();
-    const res = await fetch(url, { cache: "no-store" });
-    const data = await res.json();
+# ==============================
+# CONFIG
+# ==============================
 
-    console.log("✅ Phase‑2 data:", data);
+SYMBOL = "^NSEI"
+IST = pytz.timezone("Asia/Kolkata")
 
-    renderLastUpdated(data.computed_at);
-    renderWeeklyLevels(data.weekly_levels);
-    renderKeyLevels(data.key_levels);
-    renderSessionLevels(data.session_levels);
-    renderStructureEvents(data.structure_events);
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SNAPSHOT_PATH = os.path.join(BASE_DIR, "snapshots", "market_phase2.json")
 
-  } catch (err) {
-    console.error("❌ Phase‑2 load failed:", err);
-  }
-}
+# ==============================
+# HELPERS
+# ==============================
 
-/* ================= META ================= */
+def now_ist():
+    return datetime.now(IST)
 
-function renderLastUpdated(ts) {
-  const el = document.getElementById("phase2-last-updated");
-  if (!el || !ts) return;
-  el.innerText = "Last updated: " + new Date(ts).toLocaleString("en-IN");
-}
+def fetch_intraday_5m(days=7):
+    df = yf.download(
+        SYMBOL,
+        interval="5m",
+        period=f"{days}d",
+        progress=False
+    )
 
-/* ================= WEEKLY LEVELS ================= */
+    if df.empty:
+        raise RuntimeError("No intraday data")
 
-function renderWeeklyLevels(w) {
-  const el = document.querySelector("#weekly-levels .content");
-  if (!el || !w || w.previous_week_high == null) {
-    el.innerHTML = "<em>No data</em>";
-    return;
-  }
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [c[0].lower() for c in df.columns]
+    else:
+        df.columns = [c.lower() for c in df.columns]
 
-  el.innerHTML = `
-    <div><em>High:</em> <strong>${w.previous_week_high.toFixed(2)}</strong></div>
-    <div><em>Low:</em> <strong>${w.previous_week_low.toFixed(2)}</strong></div>
-    <div><em>(${w.week_start} → ${w.week_end})</em></div>
-  `;
-}
+    if df.index.tz is None:
+        df.index = df.index.tz_localize("UTC").tz_convert(IST)
+    else:
+        df.index = df.index.tz_convert(IST)
 
-function renderTrendArchitect1300(t) {
-  const el = document.querySelector("#trend-architect-1300 .content");
+    return df.sort_index()
 
-  if (!el || !t) {
-    el.innerHTML = "<em>Waiting for Trend Architect snapshot…</em>";
-    return;
-  }
+# ==============================
+# PHASE‑2 TREND ARCHITECT @ 13:00
+# ==============================
 
-  el.innerHTML = `
-    <div class="trend-row">
-      <span class="trend-label">Major Candle:</span>
-      <span class="trend-value">
-        ${t.major_candle.range} pts (${t.major_candle.type}) @ ${t.major_candle.time}
-      </span>
-    </div>
+def compute_trend_architect_1300(day_df, previous_snapshot):
+    """
+    Window: 09:30 → ≤13:00
+    Refresh: until 13:00
+    Freeze: after 13:00
+    Logic: IDENTICAL to Phase‑1
+    """
 
-    <div class="trend-row">
-      <span class="trend-label">Next Candle:</span>
-      <span class="trend-value">${t.next_candle.relation}</span>
-    </div>
+    current_time = now_ist().time()
 
-    <div class="trend-row">
-      <span class="trend-label">Total Distance:</span>
-      <span class="trend-value">
-        ${t.distance_travelled.points} pts |
-        Overlaps: ${t.distance_travelled.overlaps} |
-        Small candles: ${t.distance_travelled.small_candles}
-      </span>
-    </div>
+    # After 13:00 → freeze
+    if current_time > time(13, 0) and "trend_architect_1300" in previous_snapshot:
+        return previous_snapshot["trend_architect_1300"]
 
-    <div class="trend-row">
-      <span class="trend-label">Market Character:</span>
-      <span class="trend-value">${t.market_character}</span>
-    </div>
-  `;
-}
+    # Active computation window
+    win = day_df[
+        (day_df.index.time >= time(9, 30)) &
+        (day_df.index.time <= min(current_time, time(13, 0)))
+    ]
 
-/* ================= KEY LEVELS ================= */
+    if len(win) < 6:
+        return None
 
-function renderKeyLevels(k) {
-  const el = document.querySelector("#key-levels .content");
-  if (!el || !k) {
-    el.innerHTML = "<em>No data</em>";
-    return;
-  }
+    win = win.copy()
+    win["body"] = (win["close"] - win["open"]).abs()
 
-  const rList = Array.isArray(k.resistance) ? k.resistance : [];
-  const sList = Array.isArray(k.support) ? k.support : [];
+    # ----- MAJOR CANDLE (same logic)
+    major = win.loc[win["body"].idxmax()]
+    major_color = "GREEN" if major["close"] > major["open"] else "RED"
 
-  const renderList = (label, arr) => {
-    if (!arr.length) {
-      return `<div><em>${label}:</em> —</div>`;
+    # ----- OVERLAPS + SMALL CANDLES (same logic)
+    overlaps = 0
+    small_c = 0
+
+    for i in range(1, len(win)):
+        p = win.iloc[i - 1]
+        c = win.iloc[i]
+
+        bp = sorted([p["open"], p["close"]])
+        bc = sorted([c["open"], c["close"]])
+        overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
+        body = bc[1] - bc[0]
+
+        if body > 0 and overlap >= 0.8 * body:
+            overlaps += 1
+        if (c["high"] - c["low"]) < 25:
+            small_c += 1
+
+    # ----- DISTANCE (same logic)
+    open_0930 = win.iloc[0]["open"]
+    close_latest = win.iloc[-1]["close"]
+    dist = round(close_latest - open_0930, 2)
+
+    # ----- MARKET CHARACTER (same rules)
+    if overlaps <= 2 and small_c <= 3:
+        mc = "Steady move with buyer acceptance"
+    elif overlaps >= 4 or small_c >= 5:
+        mc = "Upward movement with frequent overlap — be cautious"
+    else:
+        mc = "Directional bias intact, but higher risk of deep pullback"
+
+    return {
+        "window": "09:30 → 13:00",
+        "freeze_rule": "Frozen after 13:00",
+        "major_candle": {
+            "range": round(major["body"], 2),
+            "type": "MARUBOZU",
+            "color": major_color,
+            "time": major.name.strftime("%H:%M")
+        },
+        "next_candle": {
+            "relation": "SUPPORTING" if major_color == "GREEN" else "OPPOSING"
+        },
+        "distance_travelled": {
+            "points": dist,
+            "direction": "UP" if dist > 0 else "DOWN",
+            "overlaps": overlaps,
+            "small_candles": small_c
+        },
+        "market_character": mc,
+        "computed_at": now_ist().isoformat()
     }
-    return `
-      <div><em>${label}:</em></div>
-      ${arr.map(v => `<div style="margin-left:12px;"><strong>${v}</strong></div>`).join("")}
-    `;
-  };
 
-  el.innerHTML = `
-    ${renderList("Resistance", rList)}
-    ${renderList("Support", sList)}
-  `;
-}
+# ==============================
+# MAIN PHASE‑2 PRODUCER
+# ==============================
 
-/* ================= SESSION HIGH / LOW ================= */
+def run_phase2():
+    # Load previous Phase‑2 snapshot (for freeze support)
+    previous = {}
+    if os.path.exists(SNAPSHOT_PATH):
+        with open(SNAPSHOT_PATH, "r") as f:
+            previous = json.load(f)
 
-function renderSessionLevels(s) {
-  const el = document.querySelector("#session-levels .content");
-  if (!el || !s || s.high == null || s.low == null) {
-    el.innerHTML = "<em>No session data (market closed or not started)</em>";
-    return;
-  }
+    df = fetch_intraday_5m(days=5)
 
-  el.innerHTML = `
-    <div><em>High:</em> <strong>${s.high.toFixed(2)}</strong></div>
-    <div><em>Low:</em> <strong>${s.low.toFixed(2)}</strong></div>
-  `;
-}
+    # Detect latest trading day
+    day_groups = df.groupby(df.index.date)
+    valid_days = [d for d, g in day_groups if len(g) >= 10]
+    if not valid_days:
+        return
 
-/* ================= STRUCTURE EVENTS ================= */
+    last_day = valid_days[-1]
+    day_df = day_groups.get_group(last_day)
 
-function renderStructureEvents(events) {
-  const el = document.querySelector("#structure-events .content");
+    # Compute Trend Architect @ 13:00
+    ta_1300 = compute_trend_architect_1300(day_df, previous)
 
-  if (!el || !Array.isArray(events) || events.length === 0) {
-    el.innerHTML = "<em>No events detected</em>";
-    return;
-  }
+    snapshot = {
+        "phase": 2,
+        "symbol": "NIFTY",
+        "trend_architect_1300": ta_1300,
+        "computed_at": now_ist().isoformat()
+    }
 
-  el.innerHTML = events.map(e => `
-    <div style="margin-bottom:8px;">
-      <strong>${e.event} ${e.direction}</strong><br>
-      Structure: ${e.structure}<br>
-      Level: ${e.level}<br>
-      Confirmed by: ${e.confirmed_by}<br>
-      Time: ${new Date(e.timestamp).toLocaleTimeString("en-IN")}
-    </div>
-  `).join("<hr>");
-}
+    with open(SNAPSHOT_PATH, "w") as f:
+        json.dump(snapshot, f, indent=2)
 
-/* ================= INIT ================= */
+# ==============================
+# RUN
+# ==============================
 
-document.addEventListener("DOMContentLoaded", loadPhase2);
+if __name__ == "__main__":
+    run_phase2()
