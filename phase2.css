@@ -55,3 +55,24 @@
   font-weight: 600;
   color: #333;
 }
+.subtle-note {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #888;
+  margin-top: 3px;
+}
+
+.trend-row {
+  margin-bottom: 6px;
+}
+
+.trend-label {
+  font-style: italic;
+  color: #777;
+}
+
+.trend-value {
+  font-weight: 600;
+  color: #333;
+}
