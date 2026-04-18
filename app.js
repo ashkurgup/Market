@@ -58,22 +58,39 @@
     <div class="line"><b>PDC:</b> ${safe(d.previous_day?.pdc)}</div>
   `);
 
-  /* =======================
-     MARKET OPEN
-  ======================= */
-  const gap = d.market_open?.gap ?? {};
-  const oc = d.market_open?.opening_candle ?? {};
+ /* =======================
+   MARKET OPEN
+======================= */
+const gap = d.market_open?.gap ?? {};
+const oc = d.market_open?.opening_candle ?? {};
+const ohlc = oc.ohlc ?? {};
 
-  render("box-open", "open", `
-    <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
-    <div class="line"><b>Gap:</b> ${safe(gap.direction)} (${safe(gap.points)})</div>
-    <div class="small">Frozen at ${safe(gap.frozen_at)}</div>
-    <div class="line">
-      <b>Opening Candle:</b>
-      <span class="${oc.color === "GREEN" ? "green" : "red"}">${safe(oc.type)}</span>
-      (Size ${safe(oc.size)} pts | Body ${safe(oc.body_pct)}%)
-    </div>
-  `);
+render("box-open", "open", `
+  <h3>MARKET OPEN <span class="small">FROZEN</span></h3>
+
+  <div class="line">
+    <b>Gap:</b> ${safe(gap.direction)} (${safe(gap.points)})
+  </div>
+  <div class="small">Frozen at ${safe(gap.frozen_at)}</div>
+
+  <div class="line">
+    <b>Opening Candle:</b>
+    <span class="${oc.color === "GREEN" ? "green" : "red"}">${safe(oc.type)}</span>
+    (Size ${safe(oc.size)} pts | Body ${safe(oc.body_pct)}%)
+  </div>
+
+  <div class="line">
+    <b>O:</b> ${safe(ohlc.open)} |
+    <b>H:</b> ${safe(ohlc.high)}
+  </div>
+  <div class="line">
+    <b>L:</b> ${safe(ohlc.low)} |
+    <b>C:</b> ${safe(ohlc.close)}
+  </div>
+  <div class="line">
+    <b>Range:</b> ${safe(oc.range)} pts
+  </div>
+`);
 
   /* =======================
      TREND ARCHITECT
