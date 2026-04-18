@@ -1,1 +1,63 @@
+{
+  "phase": 2,
+  "symbol": "NIFTY",
 
+  "session": {
+    "start": "09:15",
+    "end": "15:30",
+    "timezone": "IST"
+  },
+
+  "weekly_levels": {
+    "previous_week_high": null,
+    "previous_week_low": null,
+    "week_start": null,
+    "week_end": null
+  },
+
+  "key_levels": {
+    "nearest_resistance": null,
+    "nearest_support": null
+  },
+
+  "session_levels": {
+    "high": null,
+    "low": null,
+    "based_on_timeframe": "15m",
+    "update_rule": "on_candle_close"
+  },
+
+  "structure_events": [],
+
+  "momentum_events": [],
+
+  "global_indices": {
+    "time_window_minutes": 30,
+    "indices": [
+      {
+        "name": "Dow Futures",
+        "percent_change": null
+      },
+      {
+        "name": "Nikkei",
+        "percent_change": null
+      },
+      {
+        "name": "Hang Seng",
+        "percent_change": null
+      },
+      {
+        "name": "DAX",
+        "percent_change": null
+      }
+    ]
+  },
+
+  "bias": {
+    "day": null,
+    "h4": null,
+    "h1": null
+  },
+
+  "computed_at": null
+}
