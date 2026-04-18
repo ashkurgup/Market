@@ -7,9 +7,11 @@ import yfinance as yf
 
 IST = pytz.timezone("Asia/Kolkata")
 
-# ============================================================
+SNAPSHOT_PATH = "snapshots/market_phase1.json"
+
+# ======================================================
 # Helpers
-# ============================================================
+# ======================================================
 def now_ist():
     return datetime.now(IST)
 
@@ -27,61 +29,55 @@ def norm_cols(df):
         df.columns = [c.lower() for c in df.columns]
     return df
 
-def write_snapshot(obj):
-    obj["meta"]["last_updated"] = now_ist().strftime("%H:%M:%S")
-    with open("snapshots/market_phase1.json", "w") as f:
-        json.dump(obj, f, indent=2)
+def write_snapshot(data):
+    data["meta"]["last_updated"] = now_ist().strftime("%H:%M:%S")
+    with open(SNAPSHOT_PATH, "w") as f:
+        json.dump(data, f, indent=2)
 
-# ============================================================
-# Load existing snapshot (for safe fallback)
-# ============================================================
-with open("snapshots/market_phase1.json", "r") as f:
+# ======================================================
+# Load existing snapshot (for freeze + fallback)
+# ======================================================
+with open(SNAPSHOT_PATH, "r") as f:
     previous = json.load(f)
 
-# Make sure containers exist
 previous.setdefault("institutional_flows", None)
 previous.setdefault("pcr", None)
-previous.setdefault("trend_architect", previous.get("trend_architect"))
-previous.setdefault("market_open", previous.get("market_open"))
 
-# ============================================================
-# Fetch recent NIFTY data (used ONLY to detect last trading day
-# and compute frozen blocks if missing; otherwise preserved)
-# ============================================================
+# ======================================================
+# Fetch recent NIFTY data (ONLY to detect last trading day)
+# ======================================================
 df = yf.download("^NSEI", interval="5m", period="5d", progress=False)
 df = fix_index(df)
 df = norm_cols(df)
 df = df.sort_index()
 
-# Identify last trading day with sufficient candles
 day_groups = df.groupby(df.index.date)
 valid_days = [d for d, g in day_groups if len(g) >= 10]
 
-# If absolutely no data, keep snapshot unchanged
+# If no trading data at all → just persist snapshot
 if not valid_days:
     write_snapshot(previous)
     raise SystemExit(0)
 
-last_day = valid_days[-1]
-day_df = day_groups.get_group(last_day)
+last_trading_day = valid_days[-1]
+day_df = day_groups.get_group(last_trading_day)
 
-# ============================================================
-# MARKET OPEN (FROZEN) — compute ONLY if missing
-# ============================================================
+# ======================================================
+# MARKET OPEN (compute ONCE, then frozen forever)
+# ======================================================
 if not previous.get("market_open"):
-    oc_window = day_df[(day_df.index.time >= time(9, 15)) & (day_df.index.time <= time(9, 35))]
-    if not oc_window.empty:
-        r = oc_window.iloc[0]
+    oc_win = day_df[(day_df.index.time >= time(9, 15)) & (day_df.index.time <= time(9, 35))]
+    if not oc_win.empty:
+        r = oc_win.iloc[0]
         body = abs(r["close"] - r["open"])
         rng = r["high"] - r["low"]
 
-        # Gap vs previous day close (PDC already frozen in snapshot)
-        pdc = previous.get("previous_day", {}).get("pdc")
-        gap_pts = round(r["open"] - pdc, 2) if pdc is not None else None
+        pdc = previous["previous_day"]["pdc"]
+        gap_pts = round(r["open"] - pdc, 2)
 
         previous["market_open"] = {
             "gap": {
-                "direction": "UP" if gap_pts and gap_pts > 0 else "DOWN",
+                "direction": "UP" if gap_pts > 0 else "DOWN",
                 "points": gap_pts,
                 "frozen_at": "09:20 IST"
             },
@@ -101,11 +97,13 @@ if not previous.get("market_open"):
             }
         }
 
-# ============================================================
-# TREND ARCHITECT (FROZEN) — compute ONLY if missing/empty
-# ============================================================
+# ======================================================
+# TREND ARCHITECT (compute ONCE, then frozen)
+# ======================================================
 if not previous.get("trend_architect"):
-    win = day_df[(day_df.index.time >= time(9, 30)) & (day_df.index.time <= time(11, 0))]
+    win = day_df[(day_df.index.time >= time(9, 30)) &
+                 (day_df.index.time <= time(11, 0))]
+
     if len(win) >= 6:
         win = win.copy()
         win["body"] = (win["close"] - win["open"]).abs()
@@ -114,6 +112,7 @@ if not previous.get("trend_architect"):
 
         overlaps = 0
         small_c = 0
+
         for i in range(1, len(win)):
             p = win.iloc[i - 1]
             c = win.iloc[i]
@@ -121,6 +120,7 @@ if not previous.get("trend_architect"):
             bc = sorted([c["open"], c["close"]])
             overlap = max(0, min(bp[1], bc[1]) - max(bp[0], bc[0]))
             body = bc[1] - bc[0]
+
             if body > 0 and overlap >= 0.8 * body:
                 overlaps += 1
             if (c["high"] - c["low"]) < 25:
@@ -157,25 +157,30 @@ if not previous.get("trend_architect"):
             "market_character": mc
         }
 
-# ============================================================
-# INSTITUTIONAL FLOWS (Moneycontrol — FINAL, CI‑SAFE)
-# ============================================================
+# ======================================================
+# SESSION FOR MONEYCONTROL + NSE (CRITICAL)
+# ======================================================
+session = requests.Session()
+session.headers.update({
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json"
+})
+
+# ======================================================
+# INSTITUTIONAL FLOWS — MONEYCONTROL (FINAL)
+# ======================================================
 try:
+    session.get("https://www.moneycontrol.com", timeout=10)
     mc_url = "https://www.moneycontrol.com/stocks/marketstats/fii_dii_activity/homepage/json"
-    mc = requests.get(mc_url, timeout=10).json()
+    mc = session.get(mc_url, timeout=10).json()
 
     rows = mc.get("data", [])
     if rows:
-        # rows are latest-first
-        latest = rows[0]
-
-        as_of = latest["date"]  # e.g., "17-Apr-2026"
-
         fii_vals = [float(r["fii"]) for r in rows[:4]]
         dii_vals = [float(r["dii"]) for r in rows[:4]]
 
         previous["institutional_flows"] = {
-            "as_of": as_of,
+            "as_of": rows[0]["date"],
             "today": {
                 "fii": fii_vals[0],
                 "dii": dii_vals[0]
@@ -192,33 +197,33 @@ try:
             }
         }
 except Exception:
-    # Network / holiday / site issue → keep last stored flows
+    # Keep last stored flows on holiday / block
     pass
 
-# ============================================================
-# PCR (NSE Option Chain JSON) — SAFE FALLBACK
-# ============================================================
+# ======================================================
+# PCR — NSE OPTION CHAIN (FINAL)
+# ======================================================
 try:
-    headers = {"User-Agent": "Mozilla/5.0"}
-    oc = requests.get(
-        "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY",
-        headers=headers, timeout=10
-    ).json()
+    session.get("https://www.nseindia.com", timeout=10)
+    oc_url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
+    oc = session.get(oc_url, timeout=10).json()
 
-    if isinstance(oc, dict) and "records" in oc:
-        call_oi = sum(r.get("CE", {}).get("openInterest", 0) for r in oc["records"]["data"])
-        put_oi = sum(r.get("PE", {}).get("openInterest", 0) for r in oc["records"]["data"])
-        previous["pcr"] = {
-            "index": "NIFTY",
-            "type": "OI_PCR",
-            "value": round(put_oi / call_oi, 2) if call_oi > 0 else None,
-            "as_of": oc["records"].get("timestamp")
-        }
+    if "records" in oc:
+        call_oi = sum(x.get("CE", {}).get("openInterest", 0) for x in oc["records"]["data"])
+        put_oi = sum(x.get("PE", {}).get("openInterest", 0) for x in oc["records"]["data"])
+
+        if call_oi > 0:
+            previous["pcr"] = {
+                "index": "NIFTY",
+                "type": "OI_PCR",
+                "value": round(put_oi / call_oi, 2),
+                "as_of": oc["records"]["timestamp"]
+            }
 except Exception:
-    # Keep previous PCR untouched
+    # Keep last stored PCR
     pass
 
-# ============================================================
-# WRITE SNAPSHOT
-# ============================================================
+# ======================================================
+# WRITE FINAL SNAPSHOT
+# ======================================================
 write_snapshot(previous)
