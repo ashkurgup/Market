@@ -1,1 +1,40 @@
+.phase-section {
+  margin-top: 40px;
+  padding-top: 20px;
+}
 
+.phase-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.phase2-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.phase2-card {
+  border: 2px solid #ddd;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fafafa;
+}
+
+.phase2-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.phase2-card .content {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.phase2-card .muted {
+  color: #999;
+  font-style: italic;
+}
