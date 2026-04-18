@@ -54,27 +54,33 @@ def fetch_ohlcv():
 
 def compute_weekly_levels(df):
     """
-    NSE week definition:
-    - A trading week ends on Friday 15:30 IST
-    - New week starts immediately after that
+    NSE-compliant weekly definition:
+    - Trading week ends at the LAST candle of Friday
+    - Not dependent on exact 15:30 timestamp
     """
 
     df = df.copy()
     df["date"] = df["timestamp"].dt.date
-    df["time"] = df["timestamp"].dt.time
+    df["weekday"] = df["timestamp"].dt.weekday  # Monday=0, Friday=4
 
-    # Define week_close flag: Friday after 15:30
-    df["is_week_close"] = (
-        (df["timestamp"].dt.weekday == 4) &  # Friday
-        (df["timestamp"].dt.time >= time(15, 30))
-    )
+    # Mark the last candle of each Friday
+    friday_df = df[df["weekday"] == 4]
+    if friday_df.empty:
+        return {
+            "previous_week_high": None,
+            "previous_week_low": None,
+            "week_start": None,
+            "week_end": None
+        }
 
-    # Tag each candle with a week_id
+    # Get last candle timestamp per Friday
+    friday_closes = friday_df.groupby("date")["timestamp"].max()
+    df["is_week_close"] = df["timestamp"].isin(friday_closes)
+
+    # Assign week ids
     df["week_id"] = df["is_week_close"].cumsum()
 
-    # The latest week_id is current/ongoing week
     last_completed_week_id = df["week_id"].max() - 1
-
     week_df = df[df["week_id"] == last_completed_week_id]
 
     if week_df.empty:
