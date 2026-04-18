@@ -43,6 +43,43 @@ function renderWeeklyLevels(w) {
   `;
 }
 
+function renderTrendArchitect1300(t) {
+  const el = document.querySelector("#trend-architect-1300 .content");
+
+  if (!el || !t) {
+    el.innerHTML = "<em>Waiting for Trend Architect snapshot…</em>";
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="trend-row">
+      <span class="trend-label">Major Candle:</span>
+      <span class="trend-value">
+        ${t.major_candle.range} pts (${t.major_candle.type}) @ ${t.major_candle.time}
+      </span>
+    </div>
+
+    <div class="trend-row">
+      <span class="trend-label">Next Candle:</span>
+      <span class="trend-value">${t.next_candle.relation}</span>
+    </div>
+
+    <div class="trend-row">
+      <span class="trend-label">Total Distance:</span>
+      <span class="trend-value">
+        ${t.distance_travelled.points} pts |
+        Overlaps: ${t.distance_travelled.overlaps} |
+        Small candles: ${t.distance_travelled.small_candles}
+      </span>
+    </div>
+
+    <div class="trend-row">
+      <span class="trend-label">Market Character:</span>
+      <span class="trend-value">${t.market_character}</span>
+    </div>
+  `;
+}
+
 /* ================= KEY LEVELS ================= */
 
 function renderKeyLevels(k) {
