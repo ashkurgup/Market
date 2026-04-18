@@ -1,33 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Market Dashboard – Phase 1</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market Phase‑1 Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
   <div class="container">
 
-    <!-- Row 1 -->
+    <!-- ===== ROW 1 ===== -->
     <div class="grid grid-4">
-      <div class="card nifty" id="box-nifty"></div>
-      <div class="card volatility" id="box-volatility"></div>
-      <div class="card vwap" id="box-vwap"></div>
-      <div class="card anchors" id="box-anchors"></div>
+      <div id="box-nifty"></div>
+      <div id="box-volatility"></div>
+      <div id="box-vwap"></div>
+      <div id="box-anchors"></div>
     </div>
 
-    <!-- Row 2 -->
-    <div class="grid grid-3">
-      <div class="card open" id="box-open"></div>
-      <div class="card trend" id="box-trend"></div>
-      <div class="card institutional" id="box-flows"></div>
+    <!-- ===== ROW 2 (NOW 4 CARDS) ===== -->
+    <div class="grid grid-4">
+      <div id="box-open"></div>
+      <div id="box-trend"></div>
+      <div id="box-flows"></div>
+      <div id="box-pcr"></div>
     </div>
 
-    <div class="phase-divider">Phase 1 ends here</div>
+    <div class="phase-divider">
+      Phase‑1 • Context Only • Frozen Logic Preserved
+    </div>
+
   </div>
 
-  <!-- cache-busted -->
-  <script src="app.js?v=phase1-final"></script>
+  <script src="app.js"></script>
 </body>
 </html>
