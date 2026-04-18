@@ -321,24 +321,43 @@ def compute_support_resistance(current_price, weekly, df_5m):
 def run_phase2_producer():
     print(">>> Phase‑2 producer started")
 
+    # ---- Fetch latest 5‑min data (base for everything intraday)
     df5 = fetch_ohlc("5m", 7)
     current_price = float(df5["close"].iloc[-1])
 
+    # ---- Weekly & Session (already correct)
     weekly = compute_weekly_levels(df5)
     session = compute_session_levels(df5)
-    key_levels = compute_key_levels(current_price, weekly)
+
+    # ---- ✅ FINAL Support / Resistance Engine (CORRECT CALL)
+    key_levels = compute_support_resistance(
+        current_price=current_price,
+        weekly=weekly,
+        df_5m=df5
+    )
 
     snapshot = {
         "phase": 2,
         "symbol": "NIFTY",
-        "session": {"start": "09:15", "end": "15:30", "timezone": "IST"},
+        "session": {
+            "start": "09:15",
+            "end": "15:30",
+            "timezone": "IST"
+        },
         "weekly_levels": weekly,
         "key_levels": key_levels,
         "session_levels": session,
         "structure_events": [],
         "momentum_events": [],
-        "global_indices": {"time_window_minutes": 30, "indices": []},
-        "bias": {"day": None, "h4": None, "h1": None},
+        "global_indices": {
+            "time_window_minutes": 30,
+            "indices": []
+        },
+        "bias": {
+            "day": None,
+            "h4": None,
+            "h1": None
+        },
         "computed_at": datetime.now(IST).isoformat()
     }
 
@@ -346,6 +365,7 @@ def run_phase2_producer():
         json.dump(snapshot, f, indent=2)
 
     print(">>> Phase‑2 snapshot written successfully")
+
 
 if __name__ == "__main__":
     run_phase2_producer()
