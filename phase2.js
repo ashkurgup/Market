@@ -6,18 +6,35 @@ async function loadPhase2() {
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
 
-    console.log("✅ Phase‑2 data:", data);
+    console.log("✅ Phase‑2 data (raw):", data);
+    console.log("✅ Phase‑2 keys:", Object.keys(data));
 
-    renderLastUpdated(data.computed_at);
-    renderKeyLevels(data.key_levels);
-    renderSessionLevels(data.session_levels);
-    renderStructureEvents(data.structure_events);
-    renderTrendArchitect1300(data.trend_architect_1300);
+    // ---------- Header ----------
+    if (data.computed_at) {
+      renderLastUpdated(data.computed_at);
+    }
+
+    // ---------- Phase‑2 Core ----------
+    renderKeyLevels(data.key_levels || null);
+    renderSessionLevels(data.session_levels || null);
+    renderStructureEvents(data.structure_events || []);
+
+    // ---------- Trend Architect (DEFENSIVE BINDING) ----------
+    const ta1300 =
+      data.trend_architect_1300 ||   // ✅ expected key
+      data.trendArchitect1300 ||     // fallback
+      data.trend_architect ||        // legacy safety
+      null;
+
+    console.log("✅ Bound Trend Architect (13:00):", ta1300);
+
+    renderTrendArchitect1300(ta1300);
 
   } catch (err) {
     console.error("❌ Phase‑2 load failed:", err);
   }
 }
+
 
 /* ================= META ================= */
 
