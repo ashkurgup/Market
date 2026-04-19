@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Phase‑2 Card Preview</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 40px;
+    }
+
+    /* ===== Phase‑2 Card ===== */
+    .phase2-card {
+      width: 360px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    /* Card title */
+    .phase2-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .subtle-note {
+      display: block;
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* Content */
+    .content {
+      margin-top: 14px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Rows */
+    .trend-row {
+      margin-bottom: 6px;
+    }
+
+    .trend-label {
+      font-style: italic;
+      color: #777;
+    }
+
+    /* Primary signal */
+    .primary-signal {
+      margin: 14px 0 10px;
+      padding-left: 8px;
+      border-left: 4px solid #444; /* ▍ visual marker */
+    }
+
+    /* After colon */
+    .after-colon {
+      color: #4b5563;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    /* Interpretation block */
+    .interpretation {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed #ddd;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="phase2-card">
+
+    <h3>
+      Trend Architect (13:00 Snapshot)
+      <span class="subtle-note">09:30 → 13:00 · Frozen after 13:00</span>
+    </h3>
+
+    <div class="content">
+
+      <div class="trend-row primary-signal">
+        <span class="trend-label">Major Candle:</span>
+        <span class="after-colon">36.05 pts @ 09:30</span>
+      </div>
+
+      <div class="trend-row">
+        <span class="trend-label">Distance:</span>
+        <span class="after-colon">62.3 pts</span>
+      </div>
+
+      <div class="trend-row">
+        <span class="trend-label">Overlaps:</span>
+        <span class="after-colon">6</span>
+      </div>
+
+      <div class="trend-row">
+        <span class="trend-label">Small candles:</span>
+        <span class="after-colon">20</span>
+      </div>
+
+      <div class="interpretation">
+        <span class="trend-label">Market Character:</span>
+        <div class="after-colon">
+          Upward movement with frequent overlap — be cautious
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
