@@ -27,27 +27,23 @@
     "update_rule": "on_candle_close"
   },
   "structure_events": [],
-  "computed_at": "2026-04-19T04:36:22.822210+05:30",
+  "computed_at": "2026-04-19T11:40:53.856472+05:30",
   "trend_architect_1300": {
     "window": "09:30 \u2192 13:00",
     "freeze_rule": "Frozen after 13:00",
     "major_candle": {
-      "range": 44.6,
+      "range": 36.05,
       "type": "MARUBOZU",
       "color": "RED",
-      "time": "11:55"
-    },
-    "next_candle": {
-      "relation": "OPPOSING"
+      "time": "09:30"
     },
     "distance_travelled": {
-      "points": 37.2,
-      "direction": "UP",
-      "overlaps": 7,
-      "small_candles": 33
+      "points": 62.3,
+      "overlaps": 6,
+      "small_candles": 20
     },
     "market_character": "Upward movement with frequent overlap \u2014 be cautious",
-    "computed_at": "2026-04-18T17:18:16.499248+05:30"
+    "computed_at": "2026-04-19T11:40:53.259920+05:30"
   },
   "momentum_events": [],
   "global_indices": [
