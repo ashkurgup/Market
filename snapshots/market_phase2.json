@@ -27,29 +27,29 @@
     "update_rule": "on_candle_close"
   },
   "structure_events": [],
-  "computed_at": "2026-04-22T05:34:52.624907+05:30",
+  "computed_at": "2026-04-22T11:56:17.721684+05:30",
   "trend_architect_1300": {
     "window": "09:30 \u2192 13:00",
     "freeze_rule": "Frozen after 13:00",
     "major_candle": {
-      "range": 35.6,
+      "range": 27.9,
       "type": "MARUBOZU",
-      "color": "GREEN",
-      "time": "09:45"
+      "color": "RED",
+      "time": "09:55"
     },
     "distance_travelled": {
-      "points": 78.85,
-      "overlaps": 4,
-      "small_candles": 24
+      "points": -24.1,
+      "overlaps": 7,
+      "small_candles": 21
     },
     "market_character": "Upward movement with frequent overlap \u2014 be cautious",
-    "computed_at": "2026-04-21T11:45:01.565257+05:30"
+    "computed_at": "2026-04-22T11:56:16.887022+05:30"
   },
   "momentum_events": [],
   "global_indices": [
     {
       "name": "Dow Futures",
-      "pct_change_30m": 0.04,
+      "pct_change_30m": -0.05,
       "is_open": true
     },
     {
@@ -59,13 +59,13 @@
     },
     {
       "name": "Nikkei",
-      "pct_change_30m": -0.07,
-      "is_open": false
+      "pct_change_30m": 0.08,
+      "is_open": true
     },
     {
       "name": "Hang Seng",
-      "pct_change_30m": 0.1,
-      "is_open": false
+      "pct_change_30m": -0.07,
+      "is_open": true
     }
   ],
   "premarket_global_bias": 5
