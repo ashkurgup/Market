@@ -27,7 +27,7 @@
     "update_rule": "on_candle_close"
   },
   "structure_events": [],
-  "computed_at": "2026-04-26T01:33:05.198037+05:30",
+  "computed_at": "2026-04-26T03:32:51.404864+05:30",
   "trend_architect_1300": {
     "window": "09:30 \u2192 13:00",
     "freeze_rule": "Frozen after 13:00",
