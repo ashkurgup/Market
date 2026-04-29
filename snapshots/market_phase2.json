@@ -27,7 +27,7 @@
     "update_rule": "on_candle_close"
   },
   "structure_events": [],
-  "computed_at": "2026-04-29T23:35:11.503834+05:30",
+  "computed_at": "2026-04-30T03:15:50.615720+05:30",
   "trend_architect_1300": {
     "window": "09:30 \u2192 13:00",
     "freeze_rule": "Frozen after 13:00",
@@ -56,8 +56,8 @@
   "global_indices": [
     {
       "name": "Dow Futures",
-      "pct_change_30m": 0.0,
-      "is_open": true
+      "pct_change_30m": -0.23,
+      "is_open": false
     },
     {
       "name": "DAX",
@@ -75,5 +75,5 @@
       "is_open": false
     }
   ],
-  "premarket_global_bias": 4
+  "premarket_global_bias": 3
 }
