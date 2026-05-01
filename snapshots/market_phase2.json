@@ -27,7 +27,7 @@
     "update_rule": "on_candle_close"
   },
   "structure_events": [],
-  "computed_at": "2026-05-01T13:22:48.123342+05:30",
+  "computed_at": "2026-05-01T17:13:25.940401+05:30",
   "trend_architect_1300": {
     "window": "09:30 \u2192 13:00",
     "freeze_rule": "Frozen after 13:00",
@@ -62,7 +62,7 @@
   "global_indices": [
     {
       "name": "Dow Futures",
-      "pct_change_30m": -0.06,
+      "pct_change_30m": 0.01,
       "is_open": true
     },
     {
