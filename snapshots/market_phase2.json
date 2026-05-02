@@ -27,23 +27,23 @@
     "update_rule": "on_candle_close"
   },
   "structure_events": [],
-  "computed_at": "2026-05-02T04:07:35.562225+05:30",
+  "computed_at": "2026-05-02T11:52:34.306519+05:30",
   "trend_architect_1300": {
     "window": "09:30 \u2192 13:00",
     "freeze_rule": "Frozen after 13:00",
     "major_candle": {
-      "range": 40.4,
+      "range": 44.65,
       "type": "MARUBOZU",
-      "color": "RED",
+      "color": "GREEN",
       "time": "09:30"
     },
     "distance_travelled": {
-      "points": -156.2,
-      "overlaps": 7,
-      "small_candles": 28
+      "points": -39.65,
+      "overlaps": 10,
+      "small_candles": 15
     },
     "market_character": "Upward movement with frequent overlap \u2014 be cautious",
-    "computed_at": "2026-04-26T12:35:43.676177+05:30"
+    "computed_at": "2026-05-02T11:52:33.610642+05:30"
   },
   "momentum_events": [
     {
